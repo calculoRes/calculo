@@ -1536,7 +1536,7 @@
       }
 
       // Aviso prévio
-      const dias = parseInt(diasAvisoPrevioPJ) || 30;
+      const dias = parseInt(diasAvisoPrevioPJ) || 0;
       let avisoPrevioCredito = 0;
       let avisoPrevioDesconto = 0;
       if (!avisoPrevioCumpridoPJ) {
@@ -1747,7 +1747,7 @@
       // PJ
       tipoRescisaoPJ: "contratante",
       multaContratualPerc: "",
-      diasAvisoPrevioPJ: "30",
+      diasAvisoPrevioPJ: "0",
       avisoPrevioCumpridoPJ: false,
       incluir13PJ: false,
       incluirFeriasPJ: false,
@@ -1775,7 +1775,7 @@
             avisoPrevioTrabalhado: d.avisoPrevioTrabalhado || false,
             tipoRescisaoPJ: d.tipoRescisaoPJ || "contratante",
             multaContratualPerc: d.multaContratualPerc != null ? String(d.multaContratualPerc) : "",
-            diasAvisoPrevioPJ: d.diasAvisoPrevioPJ != null ? String(d.diasAvisoPrevioPJ) : "30",
+            diasAvisoPrevioPJ: d.diasAvisoPrevioPJ != null ? String(d.diasAvisoPrevioPJ) : "0",
             avisoPrevioCumpridoPJ: d.avisoPrevioCumpridoPJ || false,
             incluir13PJ: d.incluir13PJ || false,
             incluirFeriasPJ: d.incluirFeriasPJ || false,
@@ -1863,7 +1863,7 @@
             salario,
             tipoRescisaoPJ: form.tipoRescisaoPJ,
             multaContratualPerc: parseFloat(form.multaContratualPerc) || 0,
-            diasAvisoPrevioPJ: parseInt(form.diasAvisoPrevioPJ) || 30,
+            diasAvisoPrevioPJ: parseInt(form.diasAvisoPrevioPJ) || 0,
             avisoPrevioCumpridoPJ: form.avisoPrevioCumpridoPJ,
             incluir13PJ: form.incluir13PJ,
             incluirFeriasPJ: form.incluirFeriasPJ,
