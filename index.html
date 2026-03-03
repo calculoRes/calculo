@@ -1,0 +1,3025 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculadora de Rescisão</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231a5276'/%3E%3Ctext x='16' y='23' font-size='20' text-anchor='middle' fill='white' font-family='Arial'%3E%24%3C/text%3E%3C/svg%3E" />
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script crossorigin src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f4f6f9;
+      --card: #ffffff;
+      --primary: #1a5276;
+      --primary-light: #2980b9;
+      --accent: #27ae60;
+      --danger: #c0392b;
+      --warning: #f39c12;
+      --text: #2c3e50;
+      --text-light: #7f8c8d;
+      --border: #dce1e8;
+      --row-hover: #eaf2f8;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+      --radius: 6px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 0 16px 40px;
+    }
+
+    header {
+      background: var(--primary);
+      color: #fff;
+      padding: 20px 24px;
+      margin: 0 -16px 24px;
+      text-align: center;
+      position: relative;
+    }
+    header h1 { font-size: 1.5rem; font-weight: 700; }
+    header p { font-size: 0.85rem; opacity: 0.85; margin-top: 4px; animation: subtitleFade 0.35s ease-out; }
+    .btn-logout {
+      position: absolute;
+      top: 50%;
+      right: 20px;
+      transform: translateY(-50%);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: var(--radius);
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .btn-logout:hover {
+      background: rgba(255,255,255,0.22);
+      border-color: rgba(255,255,255,0.45);
+    }
+    @keyframes subtitleFade {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 0.85; transform: translateY(0); }
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; }
+
+    /* ---------- Login ---------- */
+    .login-wrapper {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.12);
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+      animation: loginIn 0.4s ease-out;
+    }
+    @keyframes loginIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .login-card h1 {
+      font-size: 1.2rem;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+    .login-card p {
+      font-size: 0.83rem;
+      color: var(--text-light);
+      margin-bottom: 24px;
+    }
+    .login-field {
+      position: relative;
+      margin-bottom: 16px;
+    }
+    .login-field input {
+      width: 100%;
+      height: 44px;
+      padding: 0 44px 0 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.95rem;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .login-field input:focus {
+      outline: none;
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 3px rgba(41,128,185,0.15);
+    }
+    .login-field.login-error input {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 3px rgba(192,57,43,0.12);
+      animation: loginShake 0.4s ease-out;
+    }
+    @keyframes loginShake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+    .login-toggle-pw {
+      position: absolute;
+      right: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      padding: 8px;
+      cursor: pointer;
+      color: var(--text-light);
+      font-size: 0.85rem;
+      line-height: 1;
+      transition: color 0.2s;
+    }
+    .login-toggle-pw:hover { color: var(--primary); }
+    .login-error-msg {
+      color: var(--danger);
+      font-size: 0.8rem;
+      margin-top: -8px;
+      margin-bottom: 12px;
+      animation: fadeSlideIn 0.2s ease-out;
+    }
+    .login-btn {
+      width: 100%;
+      height: 44px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .login-btn:hover:not(:disabled) { background: var(--primary-light); }
+    .login-btn:active:not(:disabled) { transform: scale(0.97); }
+    .login-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .login-field input:disabled {
+      background: var(--bg);
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .card h2 {
+      font-size: 1.15rem;
+      color: var(--primary);
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    /* ---------- Form ---------- */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+    .form-group label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0;
+    }
+    .form-group input,
+    .form-group select {
+      height: 40px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      background: #fff;
+      transition: border-color 0.2s;
+    }
+    .form-group select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237f8c8d' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      padding-right: 32px;
+    }
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 3px rgba(41,128,185,0.15);
+    }
+    .form-group-full {
+      grid-column: 1 / -1;
+    }
+
+    .checkbox-group {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
+      height: 40px;
+    }
+    .checkbox-group input[type="checkbox"] {
+      width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--primary);
+    }
+    .checkbox-group label {
+      white-space: normal;
+      margin-bottom: 0;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-light); }
+    .btn-accent { background: var(--accent); color: #fff; }
+    .btn-accent:hover { background: #219a52; }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-danger:hover { background: #a93226; }
+    .btn-warning { background: var(--warning); color: #fff; }
+    .btn-warning:hover { background: #d68910; }
+    .btn-sm { padding: 5px 12px; font-size: 0.8rem; }
+
+    .form-actions {
+      margin-top: 16px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* ---------- Detalhamento ---------- */
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .detail-grid .dg-row {
+      display: contents;
+    }
+    .detail-grid .dg-row:nth-child(odd) .dg-label,
+    .detail-grid .dg-row:nth-child(odd) .dg-value {
+      background: #f8f9fb;
+    }
+    .dg-label, .dg-value {
+      padding: 8px 12px;
+      font-size: 0.88rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .dg-label { font-weight: 600; color: var(--text); }
+    .dg-value { text-align: right; font-variant-numeric: tabular-nums; }
+    .dg-value.positive { color: var(--accent); font-weight: 600; }
+    .dg-value.negative { color: var(--danger); font-weight: 600; }
+    .dg-total .dg-label, .dg-total .dg-value {
+      background: var(--primary) !important;
+      color: #fff !important;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+    .dg-section .dg-label, .dg-section .dg-value {
+      background: #ebedef !important;
+      color: var(--primary) !important;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+    .dg-subtotal .dg-label, .dg-subtotal .dg-value {
+      background: #d4e6f1 !important;
+      color: var(--primary) !important;
+      font-weight: 700;
+    }
+
+    /* ---------- Detail header (com botão imprimir) ---------- */
+    .detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--primary);
+    }
+    .detail-header h2 {
+      flex: 1;
+      margin-bottom: 0;
+      padding-bottom: 0;
+      border-bottom: none;
+    }
+
+    /* ---------- Tabela (planilha) ---------- */
+    .table-wrapper { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    thead th {
+      background: var(--primary);
+      color: #fff;
+      padding: 10px 12px;
+      text-align: left;
+      font-weight: 600;
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+    }
+    tbody td {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    tbody tr:hover { background: var(--row-hover); }
+    tbody tr:nth-child(even) { background: #fafbfc; }
+    tbody tr:nth-child(even):hover { background: var(--row-hover); }
+
+    .actions-cell { display: flex; gap: 6px; }
+    .td-liquido { font-weight: 700; color: var(--accent); }
+    .td-fgts { font-weight: 600; color: var(--primary-light); }
+    .td-fgts-na { font-weight: 600; color: var(--text-light); }
+    .form-actions-mt { margin-top: 16px; }
+
+    /* ---------- Aviso / Info toggle ---------- */
+    .info-toggle {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 8px;
+    }
+    .info-toggle button {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-light);
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+    }
+    .info-toggle button:hover {
+      background: #fef9e7;
+      color: #7d6608;
+      border-color: var(--warning);
+    }
+    .info-toggle button .info-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--warning);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .disclaimer {
+      background: #fefefe;
+      border: 1px solid var(--border);
+      padding: 20px 22px;
+      font-size: 0.83rem;
+      color: var(--text);
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+      animation: fadeSlideIn 0.25s ease-out;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+    .disclaimer strong { color: var(--primary); }
+
+    .info-aviso {
+      background: #fef9e7;
+      border-left: 4px solid var(--warning);
+      padding: 10px 14px;
+      font-size: 0.8rem;
+      color: #7d6608;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      margin-bottom: 18px;
+    }
+
+    .info-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 18px;
+      border-bottom: 2px solid var(--border);
+    }
+    .info-tabs button {
+      flex: 1;
+      padding: 8px 0;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-light);
+      cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .info-tabs button.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+    .info-tabs button:hover:not(.active) {
+      color: var(--text);
+    }
+
+    .info-section {
+      margin-bottom: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #eee;
+    }
+    .info-section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    .info-section h4 {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .info-section h4 .info-badge {
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 3px;
+      color: #fff;
+    }
+    .info-badge-green { background: var(--accent); }
+    .info-badge-red { background: var(--danger); }
+    .info-badge-blue { background: var(--primary-light); }
+    .info-badge-yellow { background: #e6a817; }
+
+    .info-section p {
+      margin-bottom: 6px;
+      line-height: 1.55;
+    }
+    .info-formula {
+      background: #f4f6f9;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 0.8rem;
+      color: var(--text);
+      margin: 6px 0 4px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0 4px;
+      font-size: 0.8rem;
+    }
+    .info-table th,
+    .info-table td {
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      text-align: left;
+    }
+    .info-table th {
+      background: var(--primary);
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.78rem;
+    }
+    .info-table tr:nth-child(even) td {
+      background: #f8f9fb;
+    }
+    .info-note {
+      font-size: 0.78rem;
+      color: var(--text-light);
+      font-style: italic;
+      margin-top: 4px;
+    }
+    .info-tipo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .info-tipo-card {
+      background: #f4f6f9;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 10px;
+      font-size: 0.78rem;
+    }
+    .info-tipo-card strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 0.8rem;
+    }
+    .info-table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 32px 16px;
+      color: var(--text-light);
+      font-size: 0.95rem;
+    }
+
+    /* ---------- Mobile record cards (hidden on desktop) ---------- */
+    .mobile-records { display: none; }
+    .record-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+    .record-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .record-card-name {
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+    .record-card-regime {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 3px;
+      color: #fff;
+      background: var(--primary);
+    }
+    .record-card-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 12px;
+      margin-bottom: 10px;
+    }
+    .record-card-field {
+      font-size: 0.78rem;
+    }
+    .record-card-field small {
+      display: block;
+      color: var(--text-light);
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+    .record-card-total {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      margin-bottom: 8px;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .record-card-total .rc-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .record-card-total .rc-value {
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+    .record-card-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .record-card-actions .btn {
+      flex: 1;
+      justify-content: center;
+      padding: 6px 0;
+      font-size: 0.76rem;
+    }
+    .record-card-fgts {
+      border-top: none;
+      padding-top: 0;
+    }
+
+    .storage-notice {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: #eaf2f8;
+      border: 1px solid #aed6f1;
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      margin-top: 14px;
+      font-size: 0.8rem;
+      color: var(--primary);
+      line-height: 1.45;
+    }
+    .storage-notice .notice-icon {
+      flex-shrink: 0;
+      font-size: 1.1rem;
+      margin-top: 1px;
+    }
+    .storage-notice strong { color: var(--primary); }
+
+    /* ---------- Regime Toggle ---------- */
+    .regime-toggle {
+      display: flex;
+      margin-bottom: 18px;
+      border: 2px solid var(--primary);
+      border-radius: var(--radius);
+      overflow: hidden;
+      width: fit-content;
+    }
+    .regime-toggle button {
+      padding: 8px 28px;
+      border: none;
+      background: transparent;
+      color: var(--primary);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .regime-toggle button.active {
+      background: var(--primary);
+      color: #fff;
+    }
+    .regime-toggle button:not(.active):hover {
+      background: rgba(26, 82, 118, 0.08);
+    }
+    .opt {
+      font-weight: 400;
+      color: var(--text-light);
+      font-size: 0.78rem;
+    }
+
+    /* ---------- Tooltip "i" ---------- */
+    .tip-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      margin-left: 5px;
+      vertical-align: middle;
+    }
+    .tip-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: var(--border);
+      color: var(--text-light);
+      font-size: 0.6rem;
+      font-weight: 700;
+      font-style: normal;
+      cursor: help;
+      transition: background 0.2s, color 0.2s;
+      line-height: 1;
+    }
+    .tip-icon:hover {
+      background: var(--primary-light);
+      color: #fff;
+    }
+    .tip-bubble {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--text);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 400;
+      line-height: 1.4;
+      padding: 8px 12px;
+      border-radius: var(--radius);
+      white-space: normal;
+      width: 220px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 100;
+      pointer-events: none;
+    }
+    .tip-bubble::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: var(--text);
+    }
+    .tip-wrap:hover .tip-bubble,
+    .tip-open .tip-bubble { display: block; }
+    /* ---------- Transição campos regime ---------- */
+    .regime-fields {
+      animation: fadeSlideIn 0.3s ease-out;
+    }
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ---------- Validação inline ---------- */
+    .form-group.has-error input,
+    .form-group.has-error select {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.12);
+    }
+    .field-error {
+      color: var(--danger);
+      font-size: 0.75rem;
+      margin-top: 3px;
+      min-height: 0;
+      overflow: hidden;
+      animation: fadeSlideIn 0.2s ease-out;
+    }
+
+    /* ---------- Toast ---------- */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      background: var(--accent);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: var(--radius);
+      font-size: 0.88rem;
+      font-weight: 600;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      pointer-events: auto;
+      animation: toastIn 0.35s ease-out, toastOut 0.3s ease-in 2.5s forwards;
+    }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(40px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes toastOut {
+      from { opacity: 1; transform: translateX(0); }
+      to   { opacity: 0; transform: translateX(40px); }
+    }
+
+    /* ---------- Modal ---------- */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      animation: modalFadeIn 0.2s ease-out;
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    .modal-box {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      padding: 28px;
+      max-width: 400px;
+      width: 90%;
+      animation: modalScaleIn 0.25s ease-out;
+    }
+    @keyframes modalScaleIn {
+      from { opacity: 0; transform: scale(0.92); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    .modal-box h3 {
+      font-size: 1.05rem;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .modal-box p {
+      font-size: 0.88rem;
+      color: var(--text-light);
+      margin-bottom: 20px;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    /* ---------- Highlight do detalhe ---------- */
+    .card-highlight {
+      animation: highlightPulse 0.6s ease-out;
+    }
+    @keyframes highlightPulse {
+      0%   { box-shadow: 0 0 0 0 rgba(39, 174, 96, 0.4); }
+      50%  { box-shadow: 0 0 0 8px rgba(39, 174, 96, 0.15); }
+      100% { box-shadow: var(--shadow); }
+    }
+
+    /* ---------- Responsive: mobile (≤ 640px) ---------- */
+    @media (max-width: 640px) {
+      /* Layout */
+      body { padding: 0 10px 32px; }
+      .container { max-width: 100%; }
+
+      /* Header — flex column puts btn-logout in flow to prevent overlap */
+      header {
+        padding: 10px 14px 16px;
+        margin: 0 -10px 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      header h1 { font-size: 1.15rem; width: 100%; text-align: center; order: 0; }
+      header p { font-size: 0.78rem; width: 100%; text-align: center; order: 1; }
+      .btn-logout {
+        position: static;
+        transform: none;
+        order: -1;
+        align-self: flex-end;
+        margin-bottom: 4px;
+        padding: 5px;
+        font-size: 0;
+        gap: 0;
+      }
+      .btn-logout svg { width: 14px; height: 14px; }
+
+      /* Cards */
+      .card { padding: 14px; margin-bottom: 16px; }
+      .card h2 { font-size: 1rem; margin-bottom: 12px; padding-bottom: 6px; }
+      .detail-header { padding-bottom: 6px; margin-bottom: 12px; }
+      .detail-header h2 { font-size: 0.9rem; }
+      .detail-header .btn-sm { font-size: 0.7rem; padding: 4px 8px; white-space: nowrap; }
+
+      /* Formulário */
+      .form-grid { grid-template-columns: 1fr; gap: 12px; }
+      .form-group label { font-size: 0.8rem; }
+      .form-group input,
+      .form-group select { height: 38px; font-size: 0.85rem; }
+      .checkbox-group { padding-top: 0; height: 36px; gap: 8px; }
+      .btn { padding: 8px 16px; font-size: 0.85rem; }
+      .btn-sm { padding: 4px 8px; font-size: 0.72rem; }
+      .form-actions { gap: 8px; flex-wrap: wrap; }
+
+      /* Regime toggle */
+      .regime-toggle { width: 100%; }
+      .regime-toggle button { flex: 1; padding: 8px 0; font-size: 0.85rem; }
+
+      /* Detalhamento grid — 2fr 1fr gives labels 66% and values 33% */
+      .detail-grid { grid-template-columns: 2fr 1fr; }
+      .dg-label, .dg-value { padding: 7px 8px; font-size: 0.8rem; }
+      .dg-label { word-break: break-word; white-space: normal; hyphens: auto; }
+      .dg-section .dg-label, .dg-section .dg-value { font-size: 0.82rem; }
+      .dg-subtotal .dg-label, .dg-subtotal .dg-value { font-size: 0.8rem; }
+      .dg-total .dg-label, .dg-total .dg-value { font-size: 0.88rem; }
+
+      /* Tabela de registros — hide on mobile, show cards */
+      .table-wrapper { display: none; }
+      .mobile-records { display: block; }
+
+      /* Toast */
+      .toast-container { top: 10px; left: 10px; right: 10px; }
+      .toast { font-size: 0.82rem; padding: 10px 14px; }
+
+      /* Modal */
+      .modal-box { padding: 20px; }
+      .modal-box h3 { font-size: 0.95rem; }
+      .modal-box p { font-size: 0.82rem; margin-bottom: 16px; }
+      .modal-actions { gap: 8px; }
+
+      /* Info toggle + disclaimer */
+      .info-toggle button { padding: 5px 12px; font-size: 0.76rem; gap: 5px; }
+      .info-toggle .info-icon { width: 16px; height: 16px; font-size: 0.68rem; }
+      .disclaimer { padding: 14px; font-size: 0.8rem; max-height: 60vh; }
+      .info-aviso { padding: 8px 12px; font-size: 0.76rem; }
+      .info-tabs button { font-size: 0.8rem; }
+      .info-section { margin-bottom: 12px; padding-bottom: 10px; }
+      .info-section h4 { font-size: 0.82rem; flex-wrap: wrap; }
+      .info-section h4 .info-badge { font-size: 0.6rem; padding: 1px 5px; }
+      .info-section p { font-size: 0.8rem; }
+      .info-formula { font-size: 0.72rem; padding: 6px 10px; }
+      .info-note { font-size: 0.72rem; }
+      .info-tipo-grid { grid-template-columns: 1fr; }
+      .info-tipo-card { padding: 6px 8px; font-size: 0.74rem; }
+      .info-tipo-card strong { font-size: 0.76rem; }
+      .info-table { font-size: 0.72rem; }
+      .info-table th { font-size: 0.7rem; }
+      .info-table th, .info-table td { padding: 5px 6px; }
+
+      /* Storage notice */
+      .storage-notice { font-size: 0.75rem; padding: 10px 12px; gap: 8px; }
+      .storage-notice .notice-icon { font-size: 0.95rem; }
+
+      /* Empty state */
+      .empty-state { padding: 24px 12px; font-size: 0.88rem; }
+
+      /* Login */
+      .login-wrapper { padding: 16px; }
+      .login-card { padding: 28px 20px; }
+      .login-card h1 { font-size: 1.05rem; }
+      .login-card p { font-size: 0.8rem; margin-bottom: 20px; }
+      .login-field input { height: 42px; font-size: 0.9rem; }
+      .login-btn { height: 42px; font-size: 0.9rem; }
+      .login-error-msg { font-size: 0.76rem; }
+
+      /* Tooltip */
+      .tip-bubble { left: 0; transform: none; width: 200px; }
+      .tip-bubble::after { left: 8px; transform: none; }
+    }
+
+    /* ---------- Responsive: telas pequenas (≤ 380px) ---------- */
+    @media (max-width: 380px) {
+      /* Layout */
+      body { padding: 0 8px 24px; }
+
+      /* Header */
+      header { padding: 8px 10px 14px; margin: 0 -8px 12px; }
+      header h1 { font-size: 1.02rem; }
+      header p { font-size: 0.72rem; }
+
+      /* Cards */
+      .card { padding: 12px; margin-bottom: 12px; }
+      .card h2 { font-size: 0.92rem; margin-bottom: 10px; padding-bottom: 5px; }
+      .detail-header { padding-bottom: 5px; margin-bottom: 10px; }
+      .detail-header h2 { font-size: 0.82rem; }
+      .detail-header .btn-sm { font-size: 0.66rem; padding: 3px 6px; }
+
+      /* Formulário */
+      .form-grid { gap: 10px; }
+      .form-group label { font-size: 0.76rem; }
+      .form-group input,
+      .form-group select { height: 36px; font-size: 0.82rem; }
+      .checkbox-group { height: 34px; gap: 6px; }
+      .checkbox-group input[type="checkbox"] { width: 16px; height: 16px; }
+      .btn { padding: 7px 12px; font-size: 0.8rem; }
+      .btn-sm { padding: 3px 6px; font-size: 0.68rem; }
+      .form-actions .btn { flex: 1 1 100%; justify-content: center; }
+
+      /* Regime toggle */
+      .regime-toggle button { font-size: 0.8rem; }
+
+      /* Detalhamento grid */
+      .dg-label, .dg-value { padding: 6px 6px; font-size: 0.75rem; }
+      .dg-section .dg-label, .dg-section .dg-value { font-size: 0.76rem; }
+      .dg-subtotal .dg-label, .dg-subtotal .dg-value { font-size: 0.75rem; }
+      .dg-total .dg-label, .dg-total .dg-value { font-size: 0.82rem; }
+
+      /* Record cards 380px */
+      .record-card { padding: 12px; }
+      .record-card-name { font-size: 0.82rem; }
+      .record-card-grid { gap: 4px 8px; }
+      .record-card-field { font-size: 0.74rem; }
+      .record-card-field small { font-size: 0.64rem; }
+      .record-card-total .rc-label { font-size: 0.74rem; }
+      .record-card-total .rc-value { font-size: 0.8rem; }
+      .record-card-actions .btn { font-size: 0.7rem; }
+
+      /* Toast */
+      .toast-container { top: 8px; left: 8px; right: 8px; }
+      .toast { font-size: 0.78rem; padding: 8px 12px; }
+
+      /* Modal */
+      .modal-box { padding: 16px; width: 95%; }
+      .modal-box h3 { font-size: 0.88rem; }
+      .modal-box p { font-size: 0.78rem; margin-bottom: 14px; }
+      .modal-actions { flex-direction: column; gap: 6px; }
+      .modal-actions .btn { width: 100%; justify-content: center; }
+
+      /* Info toggle + disclaimer */
+      .info-toggle button { padding: 4px 8px; font-size: 0.72rem; gap: 4px; }
+      .info-toggle .info-icon { width: 14px; height: 14px; font-size: 0.62rem; }
+      .disclaimer { padding: 12px; font-size: 0.76rem; max-height: 55vh; }
+      .info-aviso { padding: 6px 10px; font-size: 0.72rem; }
+      .info-tabs button { font-size: 0.76rem; padding: 6px 0; }
+      .info-section { margin-bottom: 10px; padding-bottom: 8px; }
+      .info-section h4 { font-size: 0.78rem; gap: 4px; }
+      .info-section h4 .info-badge { font-size: 0.58rem; padding: 1px 4px; }
+      .info-section p { font-size: 0.76rem; line-height: 1.45; }
+      .info-formula { font-size: 0.68rem; padding: 5px 8px; }
+      .info-note { font-size: 0.68rem; }
+      .info-tipo-card { padding: 5px 7px; font-size: 0.7rem; }
+      .info-tipo-card strong { font-size: 0.72rem; }
+      .info-table { font-size: 0.68rem; }
+      .info-table th { font-size: 0.66rem; }
+      .info-table th, .info-table td { padding: 4px 5px; }
+
+      /* Storage notice */
+      .storage-notice { font-size: 0.72rem; padding: 8px 10px; gap: 6px; }
+      .storage-notice .notice-icon { font-size: 0.88rem; }
+
+      /* Empty state */
+      .empty-state { padding: 20px 10px; font-size: 0.82rem; }
+
+      /* Login */
+      .login-wrapper { padding: 12px; }
+      .login-card { padding: 24px 16px; max-width: 100%; }
+      .login-card h1 { font-size: 0.95rem; }
+      .login-card p { font-size: 0.76rem; margin-bottom: 18px; }
+      .login-field { margin-bottom: 12px; }
+      .login-field input { height: 40px; font-size: 0.85rem; }
+      .login-toggle-pw { padding: 6px; }
+      .login-btn { height: 40px; font-size: 0.85rem; }
+      .login-error-msg { font-size: 0.72rem; }
+
+      /* Tooltip */
+      .tip-bubble { width: 180px; font-size: 0.7rem; padding: 6px 10px; }
+      .tip-icon { width: 13px; height: 13px; font-size: 0.55rem; }
+      .tip-wrap { margin-left: 3px; }
+
+      /* Field error */
+      .field-error { font-size: 0.7rem; }
+
+      /* Opt label */
+      .opt { font-size: 0.72rem; }
+    }
+
+    /* ---------- Print ---------- */
+    @media print {
+      body { padding: 0; background: #fff; }
+      header, .login-wrapper, .btn-logout, .info-toggle, .disclaimer, .regime-toggle,
+      .form-actions, .toast-container, .modal-overlay,
+      .storage-notice, .actions-cell, .tip-wrap,
+      .btn, .form-group-full .checkbox-group,
+      .mobile-records { display: none !important; }
+      .table-wrapper { display: block !important; }
+
+      form.card { display: none !important; }
+
+      .card {
+        box-shadow: none;
+        border: 1px solid #ccc;
+        break-inside: avoid;
+        margin-bottom: 12px;
+      }
+
+      .detail-grid { border-color: #999; }
+      .dg-label, .dg-value { border-color: #ccc; }
+      .dg-total .dg-label, .dg-total .dg-value {
+        background: #333 !important;
+        color: #fff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .dg-section .dg-label, .dg-section .dg-value,
+      .dg-subtotal .dg-label, .dg-subtotal .dg-value {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      table { min-width: 0 !important; font-size: 0.8rem; }
+      thead th {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useCallback, useRef } = React;
+
+    // ==================== Autenticação ====================
+    const PASS_HASH = "499791c1224940e9dc3da36594b19e3d91bff794dff580e4ffa43269eee41d64";
+    const AUTH_KEY = "rescisao_auth";
+
+    async function hashSHA256(text) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(text);
+      const buffer = await crypto.subtle.digest("SHA-256", data);
+      return Array.from(new Uint8Array(buffer)).map((b) => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    function isAuthenticated() {
+      return sessionStorage.getItem(AUTH_KEY) === "1";
+    }
+
+    function LoginScreen({ onLogin }) {
+      const [pw, setPw] = useState("");
+      const [error, setError] = useState(false);
+      const [showPw, setShowPw] = useState(false);
+      const [locked, setLocked] = useState(false);
+      const [countdown, setCountdown] = useState(0);
+      const attemptsRef = useRef(0);
+      const inputRef = useRef(null);
+
+      useEffect(() => { if (inputRef.current) inputRef.current.focus(); }, []);
+
+      useEffect(() => {
+        if (countdown <= 0) { setLocked(false); return; }
+        const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
+        return () => clearTimeout(t);
+      }, [countdown]);
+
+      const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (locked) return;
+        const hash = await hashSHA256(pw);
+        if (hash === PASS_HASH) {
+          attemptsRef.current = 0;
+          sessionStorage.setItem(AUTH_KEY, "1");
+          onLogin();
+        } else {
+          attemptsRef.current += 1;
+          setError(true);
+          setPw("");
+          if (attemptsRef.current >= 3) {
+            const delay = Math.min(Math.pow(2, attemptsRef.current - 3), 30);
+            setLocked(true);
+            setCountdown(delay);
+          }
+          if (inputRef.current) inputRef.current.focus();
+        }
+      };
+
+      return (
+        <div className="login-wrapper">
+          <form className="login-card" onSubmit={handleSubmit}>
+            <h1>Calculadora de Rescisão</h1>
+            <p>Digite a senha para acessar o sistema</p>
+            <div className={`login-field ${error ? "login-error" : ""}`}>
+              <input
+                ref={inputRef}
+                type={showPw ? "text" : "password"}
+                value={pw}
+                onChange={(e) => { setPw(e.target.value); setError(false); }}
+                placeholder="Senha de acesso"
+                autoComplete="current-password"
+                disabled={locked}
+              />
+              <button type="button" className="login-toggle-pw" onClick={() => setShowPw((v) => !v)} aria-label={showPw ? "Ocultar senha" : "Mostrar senha"}>
+                {showPw ? (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                    <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                ) : (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                )}
+              </button>
+            </div>
+            {error && !locked && <div className="login-error-msg">Senha incorreta. Tente novamente.</div>}
+            {locked && <div className="login-error-msg">Muitas tentativas. Aguarde {countdown}s...</div>}
+            <button type="submit" className="login-btn" disabled={locked}>
+              {locked ? `Aguarde ${countdown}s` : "Entrar"}
+            </button>
+          </form>
+        </div>
+      );
+    }
+
+    // ==================== Utilidades ====================
+    const fmt = (v) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    const formatarData = (d) => d.split("-").reverse().join("/");
+
+    const escapeHtml = (str) => {
+      const div = document.createElement("div");
+      div.appendChild(document.createTextNode(str));
+      return div.innerHTML;
+    };
+
+    // Formata número para exibição monetária no input: 1234.5 -> "1.234,50"
+    const fmtMoney = (v) => {
+      if (v === "" || v == null) return "";
+      const num = typeof v === "string" ? parseFloat(v) : v;
+      if (isNaN(num)) return "";
+      return num.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    };
+
+    // Extrai número de string monetária: "1.234,50" -> 1234.5
+    const parseMoney = (str) => {
+      if (!str) return "";
+      const clean = str.replace(/\./g, "").replace(",", ".");
+      const num = parseFloat(clean);
+      return isNaN(num) ? "" : String(num);
+    };
+
+    const parseDate = (str) => {
+      const [y, m, d] = str.split("-").map(Number);
+      return new Date(y, m - 1, d);
+    };
+
+    const diasNoMes = (ano, mes) => new Date(ano, mes + 1, 0).getDate();
+
+    // Cria data clampeando o dia ao último dia do mês (evita overflow do JS)
+    const dataClamped = (ano, mes, dia) => {
+      const maxDia = diasNoMes(ano, mes);
+      return new Date(ano, mes, Math.min(dia, maxDia));
+    };
+
+    const diffAnos = (start, end) => {
+      let anos = end.getFullYear() - start.getFullYear();
+      const aniv = dataClamped(end.getFullYear(), start.getMonth(), start.getDate());
+      if (end < aniv) anos--;
+      return Math.max(anos, 0);
+    };
+
+    // ==================== Tabela INSS 2026 (progressiva) ====================
+    // Portaria Interministerial MPS/MF nº 13/2026
+    const FAIXAS_INSS = [
+      { teto: 1621.00,  aliq: 0.075 },
+      { teto: 2902.84,  aliq: 0.09  },
+      { teto: 4354.27,  aliq: 0.12  },
+      { teto: 8475.55,  aliq: 0.14  },
+    ];
+
+    function calcINSS(base) {
+      if (base <= 0) return 0;
+      let desconto = 0;
+      let anterior = 0;
+      for (const faixa of FAIXAS_INSS) {
+        if (base <= anterior) break;
+        const faixaBase = Math.min(base, faixa.teto) - anterior;
+        desconto += faixaBase * faixa.aliq;
+        anterior = faixa.teto;
+      }
+      return desconto;
+    }
+
+    // ==================== Tabela IRRF 2026 (progressiva + redutor) ====================
+    const FAIXAS_IRRF = [
+      { teto: 2428.80, aliq: 0,     deducao: 0      },
+      { teto: 2826.65, aliq: 0.075, deducao: 182.16 },
+      { teto: 3751.05, aliq: 0.15,  deducao: 394.16 },
+      { teto: 4664.68, aliq: 0.225, deducao: 675.49 },
+      { teto: Infinity, aliq: 0.275, deducao: 908.73 },
+    ];
+
+    function calcIRRF(base) {
+      if (base <= 0) return 0;
+      let irrf = 0;
+      for (const f of FAIXAS_IRRF) {
+        if (base <= f.teto) {
+          irrf = base * f.aliq - f.deducao;
+          break;
+        }
+      }
+      // Redutor 2026: isenção até R$ 5.000, redução parcial até R$ 7.350
+      let redutor = 0;
+      if (base <= 5000) {
+        redutor = irrf; // isento
+      } else if (base <= 7350) {
+        redutor = Math.max(0, 978.62 - 0.133145 * base);
+      }
+      return Math.max(0, irrf - redutor);
+    }
+
+    // ==================== Motor de cálculo ====================
+    function calcularRescisao(dados) {
+      const {
+        salario,
+        dataContratacao,
+        dataDemissao,
+        tipoRescisao,
+        feriasVencidas,
+        saldoFGTS,
+        avisoPrevioTrabalhado,
+      } = dados;
+
+      const inicio = parseDate(dataContratacao);
+      const fim = parseDate(dataDemissao);
+      const salarioDia = salario / 30;
+
+      // [FIX #7] Saldo de salário — cap em 30 dias
+      const diasTrabalhados = Math.min(fim.getDate(), 30);
+      const saldoSalario = salarioDia * diasTrabalhados;
+
+      // Anos completos de serviço
+      const anosServico = diffAnos(inicio, fim);
+
+      // Aviso prévio indenizado (dias)
+      let diasAvisoPrevio = 0;
+      let avisoPrevioIndenizado = 0;
+      // [FIX #3] Desconto aviso prévio para pedido de demissão
+      let descontoAvisoPrevio = 0;
+
+      if (!avisoPrevioTrabalhado) {
+        if (tipoRescisao === "sem_justa_causa") {
+          diasAvisoPrevio = Math.min(30 + anosServico * 3, 90);
+          avisoPrevioIndenizado = salarioDia * diasAvisoPrevio;
+        } else if (tipoRescisao === "acordo_mutuo") {
+          diasAvisoPrevio = Math.min(30 + anosServico * 3, 90);
+          avisoPrevioIndenizado = (salarioDia * diasAvisoPrevio) * 0.5;
+        } else if (tipoRescisao === "pedido_demissao") {
+          descontoAvisoPrevio = salarioDia * 30;
+        }
+      }
+
+      // Data de referência para proporcionais (projeta aviso prévio indenizado)
+      const dataRef = new Date(fim);
+      if (diasAvisoPrevio > 0 && !avisoPrevioTrabalhado) {
+        dataRef.setDate(dataRef.getDate() + diasAvisoPrevio);
+      }
+
+      // [FIX #1] 13º proporcional — respeita ano de contratação
+      let mesesDecimo = 0;
+      if (tipoRescisao !== "justa_causa") {
+        const anoRef = dataRef.getFullYear();
+        const anoInicio = inicio.getFullYear();
+
+        if (anoRef > anoInicio) {
+          // Contratado em ano anterior: contar desde janeiro
+          mesesDecimo = dataRef.getMonth() + (dataRef.getDate() >= 15 ? 1 : 0);
+        } else {
+          // Contratado no mesmo ano: contar desde o mês de contratação
+          mesesDecimo = dataRef.getMonth() - inicio.getMonth();
+          if (dataRef.getDate() >= 15) mesesDecimo++;
+          // Verificar se o primeiro mês teve >= 15 dias trabalhados
+          const diasNoMesContratacao = diasNoMes(anoInicio, inicio.getMonth());
+          const diasTrabPrimeiroMes = diasNoMesContratacao - inicio.getDate() + 1;
+          if (diasTrabPrimeiroMes < 15) mesesDecimo--;
+        }
+        mesesDecimo = Math.max(0, Math.min(12, mesesDecimo));
+      }
+      const decimoTerceiro = (salario / 12) * mesesDecimo;
+
+      // Férias vencidas + 1/3 (devidas em qualquer tipo de rescisão)
+      let feriasVencidasValor = 0;
+      if (feriasVencidas > 0) {
+        feriasVencidasValor = feriasVencidas * (salario + salario / 3);
+      }
+
+      // [FIX #2] Férias proporcionais + 1/3 — regra dos 15 dias implementada
+      let mesesFeriasProp = 0;
+      if (tipoRescisao !== "justa_causa") {
+        const diaAniv = inicio.getDate();
+        const mesAniv = inicio.getMonth();
+        let ultimoAniv = dataClamped(dataRef.getFullYear(), mesAniv, diaAniv);
+        if (ultimoAniv > dataRef) {
+          ultimoAniv = dataClamped(dataRef.getFullYear() - 1, mesAniv, diaAniv);
+        }
+
+        // Contar meses completos desde o último aniversário
+        let cursor = new Date(ultimoAniv);
+        let m = 0;
+        while (true) {
+          const proxMes = cursor.getMonth() + 1;
+          const proxAno = cursor.getFullYear() + (proxMes > 11 ? 1 : 0);
+          const proximo = dataClamped(proxAno, proxMes % 12, diaAniv);
+          if (proximo <= dataRef) {
+            m++;
+            cursor = proximo;
+          } else {
+            // Período parcial: verificar regra dos 15 dias
+            const diffMs = dataRef - cursor;
+            const diasParciais = Math.round(diffMs / (1000 * 60 * 60 * 24));
+            if (diasParciais >= 15) m++;
+            break;
+          }
+        }
+        mesesFeriasProp = Math.min(m, 12);
+      }
+      const feriasPropBase = (salario / 12) * mesesFeriasProp;
+      const feriasPropValor = feriasPropBase + feriasPropBase / 3;
+
+      // FGTS sobre verbas rescisórias (8%) — depositado na conta vinculada
+      const baseFGTS = saldoSalario + decimoTerceiro + avisoPrevioIndenizado;
+      const fgtsVerbas = baseFGTS * 0.08;
+
+      // Multa FGTS
+      const totalFGTSAcumulado = (saldoFGTS || 0) + fgtsVerbas;
+      // [FIX #5] Percentual correto por tipo
+      let percMultaFGTS = 0;
+      if (tipoRescisao === "sem_justa_causa") percMultaFGTS = 40;
+      else if (tipoRescisao === "acordo_mutuo") percMultaFGTS = 20;
+      const multaFGTS = totalFGTSAcumulado * (percMultaFGTS / 100);
+
+      // [FIX #4] INSS sobre saldo de salário E sobre 13º (separados)
+      const inssSalario = calcINSS(saldoSalario);
+      const inssDecimo = calcINSS(decimoTerceiro);
+
+      // IRRF sobre saldo de salário e sobre 13º (separados)
+      // Férias e aviso prévio indenizado são isentos de IRRF
+      const irrfSalario = calcIRRF(saldoSalario - inssSalario);
+      const irrfDecimo = calcIRRF(decimoTerceiro - inssDecimo);
+
+      // [FIX #6] Separação: verbas diretas vs. FGTS depositado
+      const totalVerbasBrutas =
+        saldoSalario +
+        avisoPrevioIndenizado +
+        decimoTerceiro +
+        feriasVencidasValor +
+        feriasPropValor;
+
+      const totalDescontos = inssSalario + inssDecimo + irrfSalario + irrfDecimo + descontoAvisoPrevio;
+      const totalLiquidoDireto = totalVerbasBrutas - totalDescontos;
+
+      const totalFGTSDepositado = fgtsVerbas + multaFGTS;
+      const totalGeral = totalLiquidoDireto + totalFGTSDepositado;
+
+      return {
+        saldoSalario,
+        diasTrabalhados,
+        avisoPrevioIndenizado,
+        diasAvisoPrevio,
+        descontoAvisoPrevio,
+        decimoTerceiro,
+        mesesDecimo,
+        feriasVencidasValor,
+        feriasVencidasQtd: feriasVencidas,
+        feriasPropValor,
+        mesesFeriasProp,
+        fgtsVerbas,
+        multaFGTS,
+        percMultaFGTS,
+        inssSalario,
+        inssDecimo,
+        irrfSalario,
+        irrfDecimo,
+        totalVerbasBrutas,
+        totalDescontos,
+        totalLiquidoDireto,
+        totalFGTSDepositado,
+        totalGeral,
+        // Alias para tabela de registros
+        totalLiquido: totalLiquidoDireto,
+      };
+    }
+
+    // ==================== Motor de cálculo PJ ====================
+    const TIPOS_RESCISAO_PJ = [
+      { value: "contratante", label: "Contratante encerrou" },
+      { value: "prestador", label: "Prestador encerrou" },
+      { value: "termino", label: "Término do contrato" },
+      { value: "acordo_mutuo_pj", label: "Acordo mútuo" },
+    ];
+
+    function calcularRescisaoPJ(dados) {
+      const {
+        salario,
+        dataContratacao,
+        dataDemissao,
+        tipoRescisaoPJ,
+        multaContratualPerc,
+        diasAvisoPrevioPJ,
+        avisoPrevioCumpridoPJ,
+        incluir13PJ,
+        incluirFeriasPJ,
+      } = dados;
+
+      const inicio = parseDate(dataContratacao);
+      const fim = parseDate(dataDemissao);
+      const valorDia = salario / 30;
+
+      // Saldo de pagamento
+      const diasTrabalhados = Math.min(fim.getDate(), 30);
+      const saldoPagamento = valorDia * diasTrabalhados;
+
+      // Multa contratual
+      const perc = parseFloat(multaContratualPerc) || 0;
+      let multaContratualCredito = 0;
+      let multaContratualDesconto = 0;
+      if (tipoRescisaoPJ === "contratante" && perc > 0) {
+        multaContratualCredito = salario * (perc / 100);
+      } else if (tipoRescisaoPJ === "prestador" && perc > 0) {
+        multaContratualDesconto = salario * (perc / 100);
+      }
+
+      // Aviso prévio
+      const dias = parseInt(diasAvisoPrevioPJ) || 30;
+      let avisoPrevioCredito = 0;
+      let avisoPrevioDesconto = 0;
+      if (!avisoPrevioCumpridoPJ) {
+        if (tipoRescisaoPJ === "contratante") {
+          avisoPrevioCredito = valorDia * dias;
+        } else if (tipoRescisaoPJ === "prestador") {
+          avisoPrevioDesconto = valorDia * dias;
+        }
+      }
+
+      // 13º proporcional (opcional — previsto em contrato)
+      let decimoTerceiro = 0;
+      let mesesDecimo = 0;
+      if (incluir13PJ) {
+        const anoFim = fim.getFullYear();
+        const anoInicio = inicio.getFullYear();
+        if (anoFim > anoInicio) {
+          mesesDecimo = fim.getMonth() + (fim.getDate() >= 15 ? 1 : 0);
+        } else {
+          mesesDecimo = fim.getMonth() - inicio.getMonth();
+          if (fim.getDate() >= 15) mesesDecimo++;
+          const diasNoMesContratacao = diasNoMes(anoInicio, inicio.getMonth());
+          const diasTrabPrimeiroMes = diasNoMesContratacao - inicio.getDate() + 1;
+          if (diasTrabPrimeiroMes < 15) mesesDecimo--;
+        }
+        mesesDecimo = Math.max(0, Math.min(12, mesesDecimo));
+        decimoTerceiro = (salario / 12) * mesesDecimo;
+      }
+
+      // Férias proporcionais + 1/3 (opcional — previsto em contrato)
+      let feriasPropValor = 0;
+      let mesesFeriasProp = 0;
+      if (incluirFeriasPJ) {
+        const diaAniv = inicio.getDate();
+        const mesAniv = inicio.getMonth();
+        let ultimoAniv = dataClamped(fim.getFullYear(), mesAniv, diaAniv);
+        if (ultimoAniv > fim) {
+          ultimoAniv = dataClamped(fim.getFullYear() - 1, mesAniv, diaAniv);
+        }
+        let cursor = new Date(ultimoAniv);
+        let m = 0;
+        while (true) {
+          const proxMes = cursor.getMonth() + 1;
+          const proxAno = cursor.getFullYear() + (proxMes > 11 ? 1 : 0);
+          const proximo = dataClamped(proxAno, proxMes % 12, diaAniv);
+          if (proximo <= fim) {
+            m++;
+            cursor = proximo;
+          } else {
+            const diffMs = fim - cursor;
+            const diasParciais = Math.round(diffMs / (1000 * 60 * 60 * 24));
+            if (diasParciais >= 15) m++;
+            break;
+          }
+        }
+        mesesFeriasProp = Math.min(m, 12);
+        const feriasPropBase = (salario / 12) * mesesFeriasProp;
+        feriasPropValor = feriasPropBase + feriasPropBase / 3;
+      }
+
+      const totalCreditos = saldoPagamento + multaContratualCredito + avisoPrevioCredito + decimoTerceiro + feriasPropValor;
+      const totalDescontos = multaContratualDesconto + avisoPrevioDesconto;
+      const totalLiquidoDireto = totalCreditos - totalDescontos;
+
+      return {
+        saldoPagamento,
+        diasTrabalhados,
+        multaContratualCredito,
+        multaContratualDesconto,
+        multaContratualPerc: perc,
+        avisoPrevioCredito,
+        avisoPrevioDesconto,
+        diasAvisoPrevioPJ: dias,
+        decimoTerceiro,
+        mesesDecimo,
+        feriasPropValor,
+        mesesFeriasProp,
+        totalCreditos,
+        totalDescontos,
+        totalLiquidoDireto,
+        totalFGTSDepositado: 0,
+        totalGeral: totalLiquidoDireto,
+        // Aliases for table
+        totalLiquido: totalLiquidoDireto,
+      };
+    }
+
+    // ==================== Constantes e utilitários compartilhados ====================
+    const TIPOS_RESCISAO = [
+      { value: "sem_justa_causa", label: "Sem justa causa" },
+      { value: "justa_causa", label: "Por justa causa" },
+      { value: "pedido_demissao", label: "Pedido de demissão" },
+      { value: "acordo_mutuo", label: "Acordo mútuo" },
+    ];
+
+    const tipoLabel = (dados) => {
+      const regime = dados.regime || "clt";
+      if (regime === "pj") return TIPOS_RESCISAO_PJ.find((t) => t.value === dados.tipoRescisaoPJ)?.label || dados.tipoRescisaoPJ;
+      return TIPOS_RESCISAO.find((t) => t.value === dados.tipoRescisao)?.label || dados.tipoRescisao;
+    };
+
+    // ==================== Componentes UI reutilizáveis ====================
+    function Toast({ messages }) {
+      if (messages.length === 0) return null;
+      return (
+        <div className="toast-container">
+          {messages.map((m) => (
+            <div key={m.id} className="toast">{m.text}</div>
+          ))}
+        </div>
+      );
+    }
+
+    function ConfirmModal({ title, message, onConfirm, onCancel }) {
+      const modalRef = useRef(null);
+
+      useEffect(() => {
+        const prev = document.activeElement;
+        if (modalRef.current) {
+          const first = modalRef.current.querySelector("button");
+          if (first) first.focus();
+        }
+        const trap = (e) => {
+          if (e.key === "Escape") { onCancel(); return; }
+          if (e.key !== "Tab") return;
+          const btns = modalRef.current?.querySelectorAll("button");
+          if (!btns || btns.length === 0) return;
+          const first = btns[0], last = btns[btns.length - 1];
+          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        };
+        document.addEventListener("keydown", trap);
+        return () => {
+          document.removeEventListener("keydown", trap);
+          if (prev && prev.focus) prev.focus();
+        };
+      }, [onCancel]);
+
+      return (
+        <div className="modal-overlay" onClick={onCancel}>
+          <div className="modal-box" ref={modalRef} role="alertdialog" aria-modal="true" aria-labelledby="modal-title" onClick={(e) => e.stopPropagation()}>
+            <h3 id="modal-title">{title}</h3>
+            <p>{message}</p>
+            <div className="modal-actions">
+              <button className="btn btn-primary" onClick={onCancel}>Cancelar</button>
+              <button className="btn btn-danger" onClick={onConfirm}>Excluir</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const DetailRow = ({ label, value, type, className }) => (
+      <div className={`dg-row ${className || ""}`}>
+        <div className="dg-label">{label}</div>
+        <div className={`dg-value ${type || ""}`}>
+          {type === "negative" ? `- ${fmt(value)}` : fmt(value)}
+        </div>
+      </div>
+    );
+
+    // ==================== Componentes de campo ====================
+    function Tip({ text }) {
+      const [open, setOpen] = useState(false);
+      const ref = useRef(null);
+
+      useEffect(() => {
+        if (!open) return;
+        const close = (e) => {
+          if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+        };
+        document.addEventListener("click", close, true);
+        document.addEventListener("touchstart", close, true);
+        return () => {
+          document.removeEventListener("click", close, true);
+          document.removeEventListener("touchstart", close, true);
+        };
+      }, [open]);
+
+      return (
+        <span className={`tip-wrap ${open ? "tip-open" : ""}`} ref={ref}>
+          <span
+            className="tip-icon"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen((v) => !v); }}
+            role="button"
+            tabIndex={0}
+            aria-label="Informação"
+          >i</span>
+          <span className="tip-bubble">{text}</span>
+        </span>
+      );
+    }
+
+    const FieldError = ({ error }) => error ? <div className="field-error">{error}</div> : null;
+
+    // ==================== Componente: Formulário ====================
+    const initialForm = {
+      regime: "pj",
+      nome: "",
+      dataContratacao: "",
+      dataDemissao: "",
+      salario: "",
+      // CLT
+      tipoRescisao: "sem_justa_causa",
+      feriasVencidas: "0",
+      saldoFGTS: "",
+      avisoPrevioTrabalhado: false,
+      // PJ
+      tipoRescisaoPJ: "contratante",
+      multaContratualPerc: "",
+      diasAvisoPrevioPJ: "30",
+      avisoPrevioCumpridoPJ: false,
+      incluir13PJ: false,
+      incluirFeriasPJ: false,
+    };
+
+    function Formulario({ onCalcular, editando, onCancelarEdicao, regime, onRegimeChange }) {
+      const [form, setForm] = useState(initialForm);
+      const [errors, setErrors] = useState({});
+      const [regimeKey, setRegimeKey] = useState(0);
+
+      useEffect(() => {
+        if (editando) {
+          const d = editando.dados;
+          const editRegime = d.regime || "clt";
+          onRegimeChange(editRegime);
+          setForm({
+            regime: editRegime,
+            nome: d.nome,
+            dataContratacao: d.dataContratacao,
+            dataDemissao: d.dataDemissao,
+            salario: fmtMoney(d.salario),
+            tipoRescisao: d.tipoRescisao || "sem_justa_causa",
+            feriasVencidas: String(d.feriasVencidas ?? "0"),
+            saldoFGTS: d.saldoFGTS ? fmtMoney(d.saldoFGTS) : "",
+            avisoPrevioTrabalhado: d.avisoPrevioTrabalhado || false,
+            tipoRescisaoPJ: d.tipoRescisaoPJ || "contratante",
+            multaContratualPerc: d.multaContratualPerc != null ? String(d.multaContratualPerc) : "",
+            diasAvisoPrevioPJ: d.diasAvisoPrevioPJ != null ? String(d.diasAvisoPrevioPJ) : "30",
+            avisoPrevioCumpridoPJ: d.avisoPrevioCumpridoPJ || false,
+            incluir13PJ: d.incluir13PJ || false,
+            incluirFeriasPJ: d.incluirFeriasPJ || false,
+          });
+          setErrors({});
+        } else {
+          setForm(initialForm);
+          setErrors({});
+          onRegimeChange("pj");
+        }
+      }, [editando, onRegimeChange]);
+
+      const handleChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
+        if (errors[name]) setErrors((prev) => { const n = { ...prev }; delete n[name]; return n; });
+      };
+
+      const handleMoneyChange = (e) => {
+        const { name, value } = e.target;
+        // Permite apenas dígitos, vírgula e ponto durante digitação
+        const allowed = value.replace(/[^\d.,]/g, "");
+        setForm((f) => ({ ...f, [name]: allowed }));
+        if (errors[name]) setErrors((prev) => { const n = { ...prev }; delete n[name]; return n; });
+      };
+
+      const handleMoneyBlur = (e) => {
+        const { name, value } = e.target;
+        if (!value) return;
+        const num = parseMoney(value);
+        if (num !== "") setForm((f) => ({ ...f, [name]: fmtMoney(num) }));
+      };
+
+      const setRegime = (r) => {
+        setForm((f) => ({ ...f, regime: r }));
+        onRegimeChange(r);
+        setRegimeKey((k) => k + 1);
+        setErrors({});
+      };
+
+      const isCLT = regime === "clt";
+
+      const validate = () => {
+        const errs = {};
+        if (!form.nome.trim()) errs.nome = "Informe o nome.";
+        if (!form.dataContratacao) errs.dataContratacao = "Informe a data.";
+        if (!form.dataDemissao) errs.dataDemissao = "Informe a data.";
+        const salarioNum = parseFloat(parseMoney(form.salario));
+        if (!form.salario || isNaN(salarioNum) || salarioNum <= 0) errs.salario = "Informe um valor válido.";
+        if (form.dataContratacao && form.dataDemissao && !errs.dataContratacao && !errs.dataDemissao) {
+          if (parseDate(form.dataDemissao) <= parseDate(form.dataContratacao)) {
+            errs.dataDemissao = isCLT ? "Deve ser posterior à contratação." : "Deve ser posterior ao início.";
+          }
+        }
+        setErrors(errs);
+        return Object.keys(errs).length === 0;
+      };
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!validate()) return;
+        const salario = parseFloat(parseMoney(form.salario));
+
+        if (isCLT) {
+          const saldoFGTS = form.saldoFGTS ? parseFloat(parseMoney(form.saldoFGTS)) : 0;
+          const dados = {
+            regime: "clt",
+            nome: form.nome.trim(),
+            dataContratacao: form.dataContratacao,
+            dataDemissao: form.dataDemissao,
+            salario,
+            tipoRescisao: form.tipoRescisao,
+            feriasVencidas: parseInt(form.feriasVencidas, 10),
+            saldoFGTS,
+            avisoPrevioTrabalhado: form.avisoPrevioTrabalhado,
+          };
+          const resultado = calcularRescisao(dados);
+          onCalcular(dados, resultado);
+        } else {
+          const dados = {
+            regime: "pj",
+            nome: form.nome.trim(),
+            dataContratacao: form.dataContratacao,
+            dataDemissao: form.dataDemissao,
+            salario,
+            tipoRescisaoPJ: form.tipoRescisaoPJ,
+            multaContratualPerc: parseFloat(form.multaContratualPerc) || 0,
+            diasAvisoPrevioPJ: parseInt(form.diasAvisoPrevioPJ) || 30,
+            avisoPrevioCumpridoPJ: form.avisoPrevioCumpridoPJ,
+            incluir13PJ: form.incluir13PJ,
+            incluirFeriasPJ: form.incluirFeriasPJ,
+          };
+          const resultado = calcularRescisaoPJ(dados);
+          onCalcular(dados, resultado);
+        }
+      };
+
+      return (
+        <form className="card" onSubmit={handleSubmit} noValidate>
+          <h2>{editando ? "Editar Registro" : "Dados da Rescisão"}</h2>
+          <div className="regime-toggle" role="tablist" aria-label="Regime de contratação">
+            <button type="button" role="tab" aria-selected={!isCLT} className={!isCLT ? "active" : ""} onClick={() => setRegime("pj")}>PJ</button>
+            <button type="button" role="tab" aria-selected={isCLT} className={isCLT ? "active" : ""} onClick={() => setRegime("clt")}>CLT</button>
+          </div>
+          <div className="form-grid">
+            <div className={`form-group form-group-full ${errors.nome ? "has-error" : ""}`}>
+              <label>
+                {isCLT ? "Nome do funcionário" : "Nome do prestador"} *
+                <Tip text={isCLT ? "Nome completo do trabalhador registrado em CLT." : "Nome da pessoa ou empresa que presta o serviço."} />
+              </label>
+              <input name="nome" value={form.nome} onChange={handleChange} placeholder={isCLT ? "Ex: João Silva" : "Ex: Empresa XYZ"} aria-required="true" />
+              <FieldError error={errors.nome} />
+            </div>
+            <div className={`form-group ${errors.dataContratacao ? "has-error" : ""}`}>
+              <label>
+                {isCLT ? "Data de contratação" : "Data de início do contrato"} *
+                <Tip text={isCLT ? "Data em que o funcionário começou a trabalhar na empresa." : "Data em que o contrato PJ passou a valer."} />
+              </label>
+              <input type="date" name="dataContratacao" value={form.dataContratacao} onChange={handleChange} aria-required="true" />
+              <FieldError error={errors.dataContratacao} />
+            </div>
+            <div className={`form-group ${errors.dataDemissao ? "has-error" : ""}`}>
+              <label>
+                {isCLT ? "Data de demissão" : "Data de encerramento"} *
+                <Tip text={isCLT ? "Último dia de trabalho do funcionário." : "Data em que o contrato PJ foi encerrado."} />
+              </label>
+              <input type="date" name="dataDemissao" value={form.dataDemissao} onChange={handleChange} aria-required="true" />
+              <FieldError error={errors.dataDemissao} />
+            </div>
+            <div className={`form-group ${errors.salario ? "has-error" : ""}`}>
+              <label>
+                {isCLT ? "Salário bruto (R$)" : "Valor mensal (R$)"} *
+                <Tip text={isCLT ? "Salário mensal antes dos descontos (INSS, IR, etc)." : "Valor mensal combinado no contrato de prestação de serviço."} />
+              </label>
+              <input type="text" inputMode="decimal" name="salario" value={form.salario} onChange={handleMoneyChange} onBlur={handleMoneyBlur} placeholder="R$ 0,00" aria-required="true" />
+              <FieldError error={errors.salario} />
+            </div>
+
+            {isCLT && (
+              <React.Fragment key={`clt-${regimeKey}`}>
+                <div className="form-group regime-fields">
+                  <label>
+                    Tipo de rescisão *
+                    <Tip text="Motivo do desligamento. Define quais verbas o funcionário tem direito a receber." />
+                  </label>
+                  <select name="tipoRescisao" value={form.tipoRescisao} onChange={handleChange} aria-required="true">
+                    {TIPOS_RESCISAO.map((t) => (
+                      <option key={t.value} value={t.value}>{t.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group regime-fields">
+                  <label>
+                    Férias vencidas <span className="opt">(opcional)</span>
+                    <Tip text="Períodos de férias que o funcionário tinha direito mas não tirou. Cada período vencido equivale a 1 salário + 1/3." />
+                  </label>
+                  <select name="feriasVencidas" value={form.feriasVencidas} onChange={handleChange}>
+                    {[0, 1, 2, 3].map((n) => (
+                      <option key={n} value={n}>{n} {n === 1 ? "período" : "períodos"}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group regime-fields">
+                  <label>
+                    Saldo FGTS (R$) <span className="opt">(opcional)</span>
+                    <Tip text="Valor total já depositado na conta do FGTS do funcionário. Usado para calcular a multa de 40% ou 20%." />
+                  </label>
+                  <input type="text" inputMode="decimal" name="saldoFGTS" value={form.saldoFGTS} onChange={handleMoneyChange} onBlur={handleMoneyBlur} placeholder="R$ 0,00" />
+                </div>
+                <div className="form-group form-group-full regime-fields">
+                  <div className="checkbox-group">
+                    <input type="checkbox" name="avisoPrevioTrabalhado" id="avisoPrevio" checked={form.avisoPrevioTrabalhado} onChange={handleChange} />
+                    <label htmlFor="avisoPrevio">
+                      Aviso prévio trabalhado <span className="opt">(opcional)</span>
+                      <Tip text="Marque se o funcionário cumpriu o aviso prévio trabalhando. Se não, o valor será indenizado ou descontado." />
+                    </label>
+                  </div>
+                </div>
+              </React.Fragment>
+            )}
+
+            {!isCLT && (
+              <React.Fragment key={`pj-${regimeKey}`}>
+                <div className="form-group regime-fields">
+                  <label>
+                    Tipo de encerramento *
+                    <Tip text="Quem decidiu encerrar o contrato. Define se há multa a pagar ou a receber." />
+                  </label>
+                  <select name="tipoRescisaoPJ" value={form.tipoRescisaoPJ} onChange={handleChange} aria-required="true">
+                    {TIPOS_RESCISAO_PJ.map((t) => (
+                      <option key={t.value} value={t.value}>{t.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group regime-fields">
+                  <label>
+                    Multa contratual (%) <span className="opt">(opcional)</span>
+                    <Tip text="Percentual sobre o valor mensal previsto no contrato como multa por rescisão antecipada." />
+                  </label>
+                  <input type="number" name="multaContratualPerc" value={form.multaContratualPerc} onChange={handleChange} placeholder="0" min="0" step="0.1" />
+                </div>
+                <div className="form-group regime-fields">
+                  <label>
+                    Dias de aviso prévio <span className="opt">(opcional)</span>
+                    <Tip text="Quantidade de dias de aviso prévio prevista no contrato. O padrão é 30 dias." />
+                  </label>
+                  <input type="number" name="diasAvisoPrevioPJ" value={form.diasAvisoPrevioPJ} onChange={handleChange} placeholder="30" min="0" step="1" />
+                </div>
+                <div className="form-group form-group-full regime-fields">
+                  <div className="checkbox-group">
+                    <input type="checkbox" name="avisoPrevioCumpridoPJ" id="avisoPrevioPJ" checked={form.avisoPrevioCumpridoPJ} onChange={handleChange} />
+                    <label htmlFor="avisoPrevioPJ">
+                      Aviso prévio cumprido <span className="opt">(opcional)</span>
+                      <Tip text="Marque se o aviso prévio foi cumprido. Se não, gera indenização ou desconto dependendo de quem encerrou." />
+                    </label>
+                  </div>
+                </div>
+                <div className="form-group form-group-full regime-fields">
+                  <div className="checkbox-group">
+                    <input type="checkbox" name="incluir13PJ" id="incluir13PJ" checked={form.incluir13PJ} onChange={handleChange} />
+                    <label htmlFor="incluir13PJ">
+                      Incluir 13º salário proporcional <span className="opt">(opcional)</span>
+                      <Tip text="Marque se o contrato PJ prevê pagamento de 13º salário. Será calculado proporcionalmente aos meses trabalhados no ano." />
+                    </label>
+                  </div>
+                </div>
+                <div className="form-group form-group-full regime-fields">
+                  <div className="checkbox-group">
+                    <input type="checkbox" name="incluirFeriasPJ" id="incluirFeriasPJ" checked={form.incluirFeriasPJ} onChange={handleChange} />
+                    <label htmlFor="incluirFeriasPJ">
+                      Incluir férias proporcionais + 1/3 <span className="opt">(opcional)</span>
+                      <Tip text="Marque se o contrato PJ prevê pagamento de férias. Será calculado proporcionalmente aos meses desde o último aniversário de contrato, acrescido de 1/3." />
+                    </label>
+                  </div>
+                </div>
+              </React.Fragment>
+            )}
+          </div>
+          <div className="form-actions">
+            <button type="submit" className="btn btn-primary">
+              {editando ? "Salvar Alterações" : isCLT ? "Calcular Rescisão" : "Calcular Encerramento"}
+            </button>
+            {editando && (
+              <button type="button" className="btn btn-danger" onClick={onCancelarEdicao}>
+                Cancelar
+              </button>
+            )}
+          </div>
+        </form>
+      );
+    }
+
+    // ==================== Componente: Detalhamento ====================
+    const Detalhamento = React.forwardRef(({ resultado, dados, highlight, onImprimir }, ref) => {
+      if (!resultado) return null;
+      const r = resultado;
+      const regime = dados.regime || "clt";
+      const Row = DetailRow;
+
+      if (regime === "pj") {
+        const label = TIPOS_RESCISAO_PJ.find((t) => t.value === dados.tipoRescisaoPJ)?.label;
+        return (
+          <div className={`card ${highlight ? "card-highlight" : ""}`} ref={ref}>
+            <div className="detail-header">
+              <h2>Detalhamento — {dados.nome} ({label}) — PJ</h2>
+              {onImprimir && (
+                <button className="btn btn-primary btn-sm" onClick={() => onImprimir({ dados, resultado: r })}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 4, verticalAlign: "middle"}}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                  Imprimir
+                </button>
+              )}
+            </div>
+            <div className="detail-grid">
+              <Row label="CRÉDITOS" value={r.totalCreditos} className="dg-section" />
+              <Row label={`Saldo de pagamento (${r.diasTrabalhados} dias)`} value={r.saldoPagamento} type="positive" />
+              {r.multaContratualCredito > 0 && (
+                <Row label={`Multa contratual (${r.multaContratualPerc}%)`} value={r.multaContratualCredito} type="positive" />
+              )}
+              {r.avisoPrevioCredito > 0 && (
+                <Row label={`Indenização aviso prévio (${r.diasAvisoPrevioPJ} dias)`} value={r.avisoPrevioCredito} type="positive" />
+              )}
+              {r.decimoTerceiro > 0 && (
+                <Row label={`13º proporcional (${r.mesesDecimo}/12 avos)`} value={r.decimoTerceiro} type="positive" />
+              )}
+              {r.feriasPropValor > 0 && (
+                <Row label={`Férias proporcionais + 1/3 (${r.mesesFeriasProp}/12 avos)`} value={r.feriasPropValor} type="positive" />
+              )}
+              <Row label="DESCONTOS" value={r.totalDescontos} className="dg-section" />
+              {r.multaContratualDesconto > 0 && (
+                <Row label={`(-) Multa contratual devida (${r.multaContratualPerc}%)`} value={r.multaContratualDesconto} type="negative" />
+              )}
+              {r.avisoPrevioDesconto > 0 && (
+                <Row label={`(-) Desconto aviso prévio não cumprido (${r.diasAvisoPrevioPJ} dias)`} value={r.avisoPrevioDesconto} type="negative" />
+              )}
+              {r.totalDescontos === 0 && (
+                <Row label="Nenhum desconto" value={0} />
+              )}
+              <div className="dg-row dg-total">
+                <div className="dg-label">TOTAL LÍQUIDO</div>
+                <div className="dg-value">{fmt(r.totalLiquidoDireto)}</div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      const label = TIPOS_RESCISAO.find((t) => t.value === dados.tipoRescisao)?.label;
+      return (
+        <div className={`card ${highlight ? "card-highlight" : ""}`} ref={ref}>
+          <div className="detail-header">
+            <h2>Detalhamento — {dados.nome} ({label})</h2>
+            {onImprimir && (
+              <button className="btn btn-primary btn-sm" onClick={() => onImprimir({ dados, resultado: r })}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 4, verticalAlign: "middle"}}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                Imprimir
+              </button>
+            )}
+          </div>
+          <div className="detail-grid">
+            <Row label="VERBAS RESCISÓRIAS" value={r.totalVerbasBrutas} className="dg-section" />
+            <Row label={`Saldo de salário (${r.diasTrabalhados} dias)`} value={r.saldoSalario} type="positive" />
+            {r.avisoPrevioIndenizado > 0 && (
+              <Row label={`Aviso prévio indenizado (${r.diasAvisoPrevio} dias)`} value={r.avisoPrevioIndenizado} type="positive" />
+            )}
+            {r.decimoTerceiro > 0 && (
+              <Row label={`13º proporcional (${r.mesesDecimo}/12 avos)`} value={r.decimoTerceiro} type="positive" />
+            )}
+            {r.feriasVencidasValor > 0 && (
+              <Row label={`Férias vencidas + 1/3 (${r.feriasVencidasQtd} período${r.feriasVencidasQtd !== 1 ? "s" : ""})`} value={r.feriasVencidasValor} type="positive" />
+            )}
+            {r.feriasPropValor > 0 && (
+              <Row label={`Férias proporcionais + 1/3 (${r.mesesFeriasProp}/12 avos)`} value={r.feriasPropValor} type="positive" />
+            )}
+            <Row label="DESCONTOS" value={r.totalDescontos} className="dg-section" />
+            <Row label="(-) INSS sobre saldo de salário" value={r.inssSalario} type="negative" />
+            {r.inssDecimo > 0 && (
+              <Row label="(-) INSS sobre 13º proporcional" value={r.inssDecimo} type="negative" />
+            )}
+            {r.irrfSalario > 0 && (
+              <Row label="(-) IRRF sobre saldo de salário" value={r.irrfSalario} type="negative" />
+            )}
+            {r.irrfDecimo > 0 && (
+              <Row label="(-) IRRF sobre 13º proporcional" value={r.irrfDecimo} type="negative" />
+            )}
+            {r.descontoAvisoPrevio > 0 && (
+              <Row label="(-) Desconto aviso prévio não cumprido (30 dias)" value={r.descontoAvisoPrevio} type="negative" />
+            )}
+            <Row label="TOTAL LÍQUIDO (pago diretamente)" value={r.totalLiquidoDireto} className="dg-subtotal" />
+            <Row label="FGTS (depositado na conta vinculada)" value={r.totalFGTSDepositado} className="dg-section" />
+            <Row label="FGTS sobre verbas rescisórias (8%)" value={r.fgtsVerbas} type="positive" />
+            {r.percMultaFGTS > 0 ? (
+              <Row label={`Multa FGTS (${r.percMultaFGTS}%)`} value={r.multaFGTS} type="positive" />
+            ) : (
+              <Row label="Multa FGTS (não se aplica)" value={0} />
+            )}
+            <div className="dg-row dg-total">
+              <div className="dg-label">TOTAL GERAL (líquido + FGTS)</div>
+              <div className="dg-value">{fmt(r.totalGeral)}</div>
+            </div>
+          </div>
+        </div>
+      );
+    });
+
+    // ==================== Componente: Tabela de registros ====================
+    function TabelaRegistros({ registros, onEditar, onExcluir, onExportar, onVerDetalhe, onImprimir }) {
+
+      return (
+        <div className="card">
+          <h2>Registros de Rescisão</h2>
+          {registros.length === 0 ? (
+            <div className="empty-state">Nenhum cálculo realizado ainda. Preencha o formulário acima.</div>
+          ) : (
+            <>
+              {/* Desktop: tabela */}
+              <div className="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Nome</th>
+                      <th>Regime</th>
+                      <th>Contratação</th>
+                      <th>Demissão</th>
+                      <th>Tipo</th>
+                      <th>Salário</th>
+                      <th>Líquido Direto</th>
+                      <th>FGTS</th>
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {registros.map((r, i) => {
+                      const regime = r.dados.regime || "clt";
+                      const isPJ = regime === "pj";
+                      return (
+                        <tr key={r.id}>
+                          <td>{i + 1}</td>
+                          <td>{r.dados.nome}</td>
+                          <td>{regime.toUpperCase()}</td>
+                          <td>{formatarData(r.dados.dataContratacao)}</td>
+                          <td>{formatarData(r.dados.dataDemissao)}</td>
+                          <td>{tipoLabel(r.dados)}</td>
+                          <td>{fmt(r.dados.salario)}</td>
+                          <td className="td-liquido">{fmt(r.resultado.totalLiquidoDireto)}</td>
+                          <td className={isPJ ? "td-fgts-na" : "td-fgts"}>
+                            {isPJ ? "—" : fmt(r.resultado.totalFGTSDepositado)}
+                          </td>
+                          <td>
+                            <div className="actions-cell">
+                              <button className="btn btn-primary btn-sm" onClick={() => onVerDetalhe(r)}>Ver</button>
+                              <button className="btn btn-primary btn-sm" onClick={() => onImprimir(r)}>Imprimir</button>
+                              <button className="btn btn-warning btn-sm" onClick={() => onEditar(r)}>Editar</button>
+                              <button className="btn btn-danger btn-sm" onClick={() => onExcluir(r.id)}>Excluir</button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {/* Mobile: cards */}
+              <div className="mobile-records">
+                {registros.map((r, i) => {
+                  const regime = r.dados.regime || "clt";
+                  const isPJ = regime === "pj";
+                  return (
+                    <div className="record-card" key={r.id}>
+                      <div className="record-card-header">
+                        <span className="record-card-name">{i + 1}. {r.dados.nome}</span>
+                        <span className="record-card-regime">{regime.toUpperCase()}</span>
+                      </div>
+                      <div className="record-card-grid">
+                        <div className="record-card-field">
+                          <small>Contratação</small>
+                          {formatarData(r.dados.dataContratacao)}
+                        </div>
+                        <div className="record-card-field">
+                          <small>Demissão</small>
+                          {formatarData(r.dados.dataDemissao)}
+                        </div>
+                        <div className="record-card-field">
+                          <small>Tipo</small>
+                          {tipoLabel(r.dados)}
+                        </div>
+                        <div className="record-card-field">
+                          <small>Salário</small>
+                          {fmt(r.dados.salario)}
+                        </div>
+                      </div>
+                      <div className="record-card-total">
+                        <span className="rc-label">Líquido</span>
+                        <span className="rc-value td-liquido">{fmt(r.resultado.totalLiquidoDireto)}</span>
+                      </div>
+                      {!isPJ && (
+                        <div className="record-card-total record-card-fgts">
+                          <span className="rc-label">FGTS</span>
+                          <span className="rc-value td-fgts">{fmt(r.resultado.totalFGTSDepositado)}</span>
+                        </div>
+                      )}
+                      <div className="record-card-actions">
+                        <button className="btn btn-primary btn-sm" onClick={() => onVerDetalhe(r)}>Ver</button>
+                        <button className="btn btn-primary btn-sm" onClick={() => onImprimir(r)}>Imprimir</button>
+                        <button className="btn btn-warning btn-sm" onClick={() => onEditar(r)}>Editar</button>
+                        <button className="btn btn-danger btn-sm" onClick={() => onExcluir(r.id)}>Excluir</button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="form-actions form-actions-mt">
+                <button className="btn btn-accent" onClick={onExportar}>
+                  Exportar Excel
+                </button>
+              </div>
+              <div className="storage-notice">
+                <span className="notice-icon">&#9888;</span>
+                <span>
+                  <strong>Seus dados estão salvos apenas neste navegador.</strong> Limpar os dados do navegador, usar outro dispositivo ou navegar em modo anônimo fará com que os registros sejam perdidos. <strong>Exporte a planilha Excel</strong> para garantir um backup dos seus cálculos.
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+      );
+    }
+
+    // ==================== Exportação Excel ====================
+    function exportarExcel(registros) {
+      const cltRegs = registros.filter((r) => (r.dados.regime || "clt") === "clt");
+      const pjRegs = registros.filter((r) => r.dados.regime === "pj");
+
+      const numFmt = "#,##0.00";
+
+      // --- Helpers ---
+      function colLetter(idx) {
+        let s = "";
+        let n = idx;
+        while (n >= 0) {
+          s = String.fromCharCode(65 + (n % 26)) + s;
+          n = Math.floor(n / 26) - 1;
+        }
+        return s;
+      }
+
+      function applyNumFmt(ws, range, colIndices) {
+        for (let r = range.s.r; r <= range.e.r; r++) {
+          for (const c of colIndices) {
+            const addr = colLetter(c) + (r + 1);
+            if (ws[addr] && (ws[addr].t === "n" || ws[addr].f)) {
+              ws[addr].z = numFmt;
+            }
+          }
+        }
+      }
+
+      function appendTotalRow(aoa, regsCount, moneyEndCol) {
+        const totalArr = ["TOTAL", "", "", ""];
+        const dataStart = 2;
+        const dataEnd = regsCount + 1;
+        for (let c = 4; c <= moneyEndCol; c++) {
+          const cl = colLetter(c);
+          totalArr.push(regsCount > 0 ? { f: `SUM(${cl}${dataStart}:${cl}${dataEnd})` } : 0);
+        }
+        aoa.push(totalArr);
+      }
+
+      function finalizeSheet(aoa, headers, moneyColIndices) {
+        const ws = XLSX.utils.aoa_to_sheet(aoa);
+        applyNumFmt(ws, XLSX.utils.decode_range(ws["!ref"]), moneyColIndices);
+        ws["!cols"] = headers.map((h, i) => ({
+          wch: moneyColIndices.includes(i) ? 16 : Math.max(h.length + 4, 12)
+        }));
+        return ws;
+      }
+
+      // --- Build CLT sheet ---
+      function buildCLTSheet() {
+        const headers = [
+          "Nome", "Contratação", "Demissão", "Tipo", "Salário Bruto",
+          "Saldo Salário", "Aviso Prévio Ind.", "13º Proporcional",
+          "Férias Vencidas + 1/3", "Férias Proporcionais + 1/3",
+          "Total Verbas Brutas",
+          "INSS Salário", "INSS 13º", "IRRF Salário", "IRRF 13º", "Desc. Aviso Prévio",
+          "Total Descontos", "Total Líquido Direto",
+          "FGTS Verbas", "Multa FGTS", "Total FGTS Depositado", "Total Geral"
+        ];
+        // Col indices: A=0..V=21
+        // Formula cols: K=10(SUM F:J), Q=16(SUM L:P), R=17(K-Q), U=20(S+T), V=21(R+U)
+        const moneyColIndices = [4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21];
+        const aoa = [headers];
+
+        cltRegs.forEach((r, i) => {
+          const res = r.resultado;
+          const row = i + 2; // Excel row (1-indexed, header is row 1)
+          aoa.push([
+            r.dados.nome,
+            formatarData(r.dados.dataContratacao),
+            formatarData(r.dados.dataDemissao),
+            tipoLabel(r.dados),
+            r.dados.salario || 0,
+            res.saldoSalario || 0,
+            res.avisoPrevioIndenizado || 0,
+            res.decimoTerceiro || 0,
+            res.feriasVencidasValor || 0,
+            res.feriasPropValor || 0,
+            { f: `SUM(F${row}:J${row})` },
+            res.inssSalario || 0,
+            res.inssDecimo || 0,
+            res.irrfSalario || 0,
+            res.irrfDecimo || 0,
+            res.descontoAvisoPrevio || 0,
+            { f: `SUM(L${row}:P${row})` },
+            { f: `K${row}-Q${row}` },
+            res.fgtsVerbas || 0,
+            res.multaFGTS || 0,
+            { f: `S${row}+T${row}` },
+            { f: `R${row}+U${row}` },
+          ]);
+        });
+
+        appendTotalRow(aoa, cltRegs.length, 21);
+        return finalizeSheet(aoa, headers, moneyColIndices);
+      }
+
+      // --- Build PJ sheet ---
+      function buildPJSheet() {
+        const headers = [
+          "Prestador", "Data Início", "Data Encerramento", "Tipo", "Valor Mensal",
+          "Saldo Pagamento", "Multa Contratual (Crédito)", "Inden. Aviso Prévio",
+          "13º Proporcional", "Férias Proporcionais + 1/3",
+          "Total Créditos",
+          "Multa Contratual (Desconto)", "Desc. Aviso Prévio",
+          "Total Descontos", "Total Líquido"
+        ];
+        // Col indices: A=0..O=14
+        // F=Saldo, G=Multa Créd, H=Aviso Créd, I=13º, J=Férias
+        // K=Total Créditos(SUM F:J), L=Multa Desc, M=Desc Aviso
+        // N=Total Descontos(SUM L:M), O=Líquido(K-N)
+        const moneyColIndices = [4,5,6,7,8,9,10,11,12,13,14];
+        const aoa = [headers];
+
+        pjRegs.forEach((r, i) => {
+          const res = r.resultado;
+          const row = i + 2;
+          aoa.push([
+            r.dados.nome,
+            formatarData(r.dados.dataContratacao),
+            formatarData(r.dados.dataDemissao),
+            tipoLabel(r.dados),
+            r.dados.salario || 0,
+            res.saldoPagamento || 0,
+            res.multaContratualCredito || 0,
+            res.avisoPrevioCredito || 0,
+            res.decimoTerceiro || 0,
+            res.feriasPropValor || 0,
+            { f: `SUM(F${row}:J${row})` },
+            res.multaContratualDesconto || 0,
+            res.avisoPrevioDesconto || 0,
+            { f: `SUM(L${row}:M${row})` },
+            { f: `K${row}-N${row}` },
+          ]);
+        });
+
+        appendTotalRow(aoa, pjRegs.length, 14);
+        return finalizeSheet(aoa, headers, moneyColIndices);
+      }
+
+      // --- Build workbook ---
+      const wb = XLSX.utils.book_new();
+
+      if (cltRegs.length > 0 && pjRegs.length > 0) {
+        XLSX.utils.book_append_sheet(wb, buildCLTSheet(), "Rescisões CLT");
+        XLSX.utils.book_append_sheet(wb, buildPJSheet(), "Encerramentos PJ");
+      } else if (pjRegs.length > 0) {
+        XLSX.utils.book_append_sheet(wb, buildPJSheet(), "Encerramentos PJ");
+      } else {
+        // CLT only, or no records at all (empty CLT sheet)
+        XLSX.utils.book_append_sheet(wb, buildCLTSheet(), "Rescisões CLT");
+      }
+
+      XLSX.writeFile(wb, `rescisoes_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    }
+
+    // ==================== Geração de Recibo (Impressão) ====================
+    function gerarRecibo(registro) {
+      const { dados, resultado: r } = registro;
+      const regime = dados.regime || "clt";
+      const isPJ = regime === "pj";
+
+      const fmtR = (v) => fmt(v || 0);
+      const fmtData = formatarData;
+      const esc = escapeHtml;
+
+      const css = `
+        body { font-family: Arial, sans-serif; color: #222; max-width: 700px; margin: 0 auto; padding: 24px; }
+        h1 { font-size: 16px; text-align: center; text-transform: uppercase; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 16px; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; font-size: 13px; margin: 16px 0; }
+        .info-grid span { padding: 2px 0; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0; }
+        td, th { padding: 6px 10px; border: 1px solid #ccc; }
+        th { text-align: left; }
+        .section td { background: #f0f0f0; font-weight: 700; }
+        .total td { background: #333; color: #fff; font-weight: 700; }
+        .subtotal td { background: #e8e8e8; font-weight: 700; }
+        .val { text-align: right; white-space: nowrap; }
+        .signatures { display: flex; justify-content: space-around; margin-top: 60px; text-align: center; font-size: 13px; }
+        .sig-line { border-top: 1px solid #333; padding-top: 6px; min-width: 200px; }
+        .date-line { margin-top: 40px; font-size: 13px; }
+        .btn-close { display: block; margin: 0 auto 20px; padding: 8px 24px; cursor: pointer; font-size: 14px; }
+        @media print { .btn-close { display: none; } }
+      `;
+
+      let rows = "";
+      const row = (desc, val, cls) => {
+        if (cls) return '<tr class="' + cls + '"><td colspan="2">' + desc + '</td></tr>';
+        return "<tr><td>" + desc + '</td><td class="val">' + fmtR(val) + "</td></tr>";
+      };
+
+      let titulo, info, assinaturas;
+
+      if (isPJ) {
+        const label = TIPOS_RESCISAO_PJ.find((t) => t.value === dados.tipoRescisaoPJ)?.label || dados.tipoRescisaoPJ;
+
+        titulo = "Termo de Encerramento de Contrato de Prestação de Serviço";
+        info = '<div class="info-grid">'
+          + "<span><strong>Prestador:</strong> " + esc(dados.nome) + "</span><span></span>"
+          + "<span><strong>Data de início:</strong> " + fmtData(dados.dataContratacao) + "</span>"
+          + "<span><strong>Data de encerramento:</strong> " + fmtData(dados.dataDemissao) + "</span>"
+          + "<span><strong>Valor mensal:</strong> " + fmtR(dados.salario) + "</span>"
+          + "<span><strong>Tipo:</strong> " + esc(label) + "</span>"
+          + "</div>";
+
+        rows += row("CRÉDITOS", null, "section");
+        rows += row("Saldo de pagamento (" + r.diasTrabalhados + " dias)", r.saldoPagamento);
+        if (r.multaContratualCredito > 0) rows += row("Multa contratual (" + r.multaContratualPerc + "%)", r.multaContratualCredito);
+        if (r.avisoPrevioCredito > 0) rows += row("Indenização aviso prévio (" + r.diasAvisoPrevioPJ + " dias)", r.avisoPrevioCredito);
+        if (r.decimoTerceiro > 0) rows += row("13º proporcional (" + r.mesesDecimo + "/12 avos)", r.decimoTerceiro);
+        if (r.feriasPropValor > 0) rows += row("Férias proporcionais + 1/3 (" + r.mesesFeriasProp + "/12 avos)", r.feriasPropValor);
+
+        rows += row("DESCONTOS", null, "section");
+        if (r.multaContratualDesconto > 0) rows += row("Multa contratual devida (" + r.multaContratualPerc + "%)", r.multaContratualDesconto);
+        if (r.avisoPrevioDesconto > 0) rows += row("Desc. aviso prévio não cumprido (" + r.diasAvisoPrevioPJ + " dias)", r.avisoPrevioDesconto);
+        if (r.totalDescontos === 0) rows += row("Nenhum desconto", 0);
+
+        rows += row("TOTAL LÍQUIDO", null, "total");
+        rows += "<tr class=\"total\"><td>Total líquido</td><td class=\"val\">" + fmtR(r.totalLiquidoDireto) + "</td></tr>";
+
+        assinaturas = '<div class="signatures">'
+          + '<div><div class="sig-line">Contratante</div></div>'
+          + '<div><div class="sig-line">Prestador</div></div>'
+          + "</div>";
+      } else {
+        const label = TIPOS_RESCISAO.find((t) => t.value === dados.tipoRescisao)?.label || dados.tipoRescisao;
+
+        titulo = "Recibo de Rescisão do Contrato de Trabalho";
+        info = '<div class="info-grid">'
+          + "<span><strong>Funcionário:</strong> " + esc(dados.nome) + "</span><span></span>"
+          + "<span><strong>Data de contratação:</strong> " + fmtData(dados.dataContratacao) + "</span>"
+          + "<span><strong>Data de demissão:</strong> " + fmtData(dados.dataDemissao) + "</span>"
+          + "<span><strong>Salário bruto:</strong> " + fmtR(dados.salario) + "</span>"
+          + "<span><strong>Tipo:</strong> " + esc(label) + "</span>"
+          + "</div>";
+
+        // Verbas rescisórias
+        rows += row("VERBAS RESCISÓRIAS", null, "section");
+        rows += row("Saldo de salário (" + r.diasTrabalhados + " dias)", r.saldoSalario);
+        if (r.avisoPrevioIndenizado > 0) rows += row("Aviso prévio indenizado (" + r.diasAvisoPrevio + " dias)", r.avisoPrevioIndenizado);
+        if (r.decimoTerceiro > 0) rows += row("13º proporcional (" + r.mesesDecimo + "/12 avos)", r.decimoTerceiro);
+        if (r.feriasVencidasValor > 0) rows += row("Férias vencidas + 1/3 (" + r.feriasVencidasQtd + " período" + (r.feriasVencidasQtd !== 1 ? "s" : "") + ")", r.feriasVencidasValor);
+        if (r.feriasPropValor > 0) rows += row("Férias proporcionais + 1/3 (" + r.mesesFeriasProp + "/12 avos)", r.feriasPropValor);
+
+        // Descontos
+        rows += row("DESCONTOS", null, "section");
+        rows += row("INSS sobre saldo de salário", r.inssSalario);
+        if (r.inssDecimo > 0) rows += row("INSS sobre 13º proporcional", r.inssDecimo);
+        if (r.irrfSalario > 0) rows += row("IRRF sobre saldo de salário", r.irrfSalario);
+        if (r.irrfDecimo > 0) rows += row("IRRF sobre 13º proporcional", r.irrfDecimo);
+        if (r.descontoAvisoPrevio > 0) rows += row("Desc. aviso prévio não cumprido", r.descontoAvisoPrevio);
+
+        // Subtotal líquido
+        rows += row("TOTAL LÍQUIDO (pago diretamente)", null, "subtotal");
+        rows += "<tr class=\"subtotal\"><td>Total líquido direto</td><td class=\"val\">" + fmtR(r.totalLiquidoDireto) + "</td></tr>";
+
+        // FGTS
+        rows += row("FGTS (depositado na conta vinculada)", null, "section");
+        rows += row("FGTS sobre verbas rescisórias (8%)", r.fgtsVerbas);
+        if (r.percMultaFGTS > 0) {
+          rows += row("Multa FGTS (" + r.percMultaFGTS + "%)", r.multaFGTS);
+        } else {
+          rows += row("Multa FGTS (não se aplica)", 0);
+        }
+        rows += "<tr class=\"subtotal\"><td>Total FGTS depositado</td><td class=\"val\">" + fmtR(r.totalFGTSDepositado) + "</td></tr>";
+
+        // Total geral
+        rows += row("TOTAL GERAL", null, "total");
+        rows += "<tr class=\"total\"><td>Total geral (líquido + FGTS)</td><td class=\"val\">" + fmtR(r.totalGeral) + "</td></tr>";
+
+        assinaturas = '<div class="signatures">'
+          + '<div><div class="sig-line">Empregador</div></div>'
+          + '<div><div class="sig-line">Funcionário</div></div>'
+          + "</div>";
+      }
+
+      const html = "<!DOCTYPE html><html lang=\"pt-BR\"><head><meta charset=\"UTF-8\"><title>" + titulo + "</title>"
+        + "<style>" + css + "</style></head>"
+        + "<body onload=\"window.print()\">"
+        + "<button class=\"btn-close\" onclick=\"window.close()\">Fechar</button>"
+        + "<h1>" + titulo + "</h1>"
+        + info
+        + "<table><thead><tr><th>Descrição</th><th class=\"val\">Valor</th></tr></thead><tbody>"
+        + rows
+        + "</tbody></table>"
+        + '<div class="date-line">Data: ___/___/______</div>'
+        + assinaturas
+        + "</body></html>";
+
+      const popup = window.open("", "_blank", "width=800,height=900");
+      if (popup) {
+        popup.document.write(html);
+        popup.document.close();
+      }
+    }
+
+    // ==================== Painel Informativo ====================
+    function InfoPanel() {
+      const [tab, setTab] = useState("pj");
+      return (
+        <React.Fragment>
+          <div className="info-aviso">
+            Os descontos do INSS e IRRF seguem as <strong>tabelas de 2026</strong> (janeiro a dezembro). Todo começo de ano o governo publica novos valores. Se estiver usando em <strong>2027 ou depois</strong>, os cálculos podem estar desatualizados.
+          </div>
+
+          <div className="info-tabs" role="tablist" aria-label="Regime de cálculo">
+            <button type="button" role="tab" id="info-tab-pj" aria-selected={tab === "pj"} aria-controls="info-panel-pj" className={tab === "pj" ? "active" : ""} onClick={() => setTab("pj")}>PJ</button>
+            <button type="button" role="tab" id="info-tab-clt" aria-selected={tab === "clt"} aria-controls="info-panel-clt" className={tab === "clt" ? "active" : ""} onClick={() => setTab("clt")}>CLT</button>
+          </div>
+
+          <div role="tabpanel" id={`info-panel-${tab}`} aria-labelledby={`info-tab-${tab}`}>
+            {tab === "clt" ? <InfoCLT /> : <InfoPJ />}
+          </div>
+        </React.Fragment>
+      );
+    }
+
+    function InfoCLT() {
+      return (
+        <React.Fragment>
+          <div className="info-section">
+            <h4>Saldo de salário <span className="info-badge info-badge-green">Crédito</span></h4>
+            <p>É o pagamento pelos dias que o funcionário trabalhou no mês da demissão.</p>
+            <div className="info-formula">Salário ÷ 30 × dias trabalhados no mês</div>
+            <p className="info-note">Exemplo: salário de R$ 3.000 e demissão no dia 15 → R$ 3.000 ÷ 30 × 15 = R$ 1.500</p>
+          </div>
+
+          <div className="info-section">
+            <h4>13º proporcional <span className="info-badge info-badge-green">Crédito</span></h4>
+            <p>O funcionário tem direito a 1/12 do salário por cada mês trabalhado no ano (meses com 15 dias ou mais contam como mês cheio).</p>
+            <div className="info-formula">Salário ÷ 12 × meses trabalhados no ano</div>
+            <p className="info-note">Se o aviso prévio for indenizado, os dias do aviso contam para o cálculo do 13º. Não é pago em justa causa.</p>
+          </div>
+
+          <div className="info-section">
+            <h4>Férias proporcionais + 1/3 <span className="info-badge info-badge-green">Crédito</span></h4>
+            <p>São as férias que o funcionário ainda não completou um período inteiro. Cada mês (com 15+ dias) desde o último aniversário de contrato gera 1/12 de férias. Sobre esse valor, soma-se 1/3 constitucional.</p>
+            <div className="info-formula">(Salário ÷ 12 × meses) + 1/3 do resultado</div>
+            <p className="info-note">Não é pago em justa causa.</p>
+          </div>
+
+          <div className="info-section">
+            <h4>Férias vencidas + 1/3 <span className="info-badge info-badge-green">Crédito</span></h4>
+            <p>Se o funcionário tinha períodos de férias que deveria ter tirado mas não tirou, a empresa deve pagar cada período como um salário completo + 1/3.</p>
+            <div className="info-formula">Períodos vencidos × (Salário + Salário ÷ 3)</div>
+            <p className="info-note">Devidas em qualquer tipo de rescisão, inclusive justa causa.</p>
+          </div>
+
+          <div className="info-section">
+            <h4>Aviso prévio <span className="info-badge info-badge-blue">Variável</span></h4>
+            <p>Período de antecedência que uma parte deve dar à outra antes de encerrar o contrato. O mínimo é 30 dias, e a cada ano de trabalho somam-se 3 dias (até o máximo de 90 dias).</p>
+            <div className="info-formula">Dias de aviso = 30 + (anos de serviço × 3), máximo 90{"\n"}Valor = Salário ÷ 30 × dias de aviso</div>
+            <div className="info-tipo-grid">
+              <div className="info-tipo-card">
+                <strong>Sem justa causa</strong>
+                Se não foi trabalhado, a empresa paga o valor inteiro ao funcionário.
+              </div>
+              <div className="info-tipo-card">
+                <strong>Pedido de demissão</strong>
+                Se não foi trabalhado, o funcionário tem desconto de 30 dias de salário.
+              </div>
+              <div className="info-tipo-card">
+                <strong>Acordo mútuo</strong>
+                Se não foi trabalhado, a empresa paga 50% do valor do aviso.
+              </div>
+              <div className="info-tipo-card">
+                <strong>Justa causa</strong>
+                Não há aviso prévio.
+              </div>
+            </div>
+          </div>
+
+          <div className="info-section">
+            <h4>INSS <span className="info-badge info-badge-red">Desconto</span></h4>
+            <p>Desconto obrigatório para a previdência social. O cálculo é <strong>progressivo</strong>: cada faixa do salário tem uma alíquota diferente (igual ao Imposto de Renda).</p>
+            <table className="info-table">
+              <thead>
+                <tr><th>Faixa salarial</th><th>Alíquota</th></tr>
+              </thead>
+              <tbody>
+                {FAIXAS_INSS.map((f, i) => {
+                  const prev = i > 0 ? FAIXAS_INSS[i - 1].teto : 0;
+                  const label = i === 0
+                    ? `Até ${fmt(f.teto)}`
+                    : `${fmt(prev + 0.01)} a ${fmt(f.teto)}`;
+                  return <tr key={i}><td>{label}</td><td>{(f.aliq * 100).toFixed(1).replace(".", ",")}%</td></tr>;
+                })}
+              </tbody>
+            </table>
+            <p className="info-note">Tabela vigente em 2026. O INSS incide sobre o saldo de salário e sobre o 13º separadamente. Férias e aviso prévio indenizado não têm desconto de INSS.</p>
+          </div>
+
+          <div className="info-section">
+            <h4>IRRF (Imposto de Renda) <span className="info-badge info-badge-red">Desconto</span></h4>
+            <p>Imposto de renda retido na fonte. É calculado sobre o saldo de salário e sobre o 13º <strong>separadamente</strong>, depois de descontar o INSS de cada um. Férias e aviso prévio indenizado são <strong>isentos</strong>.</p>
+            <div className="info-formula">Base = Valor da verba − INSS sobre essa verba{"\n"}IRRF = Base × alíquota da faixa − parcela a deduzir − redutor 2026</div>
+            <table className="info-table">
+              <thead>
+                <tr><th>Base de cálculo</th><th>Alíquota</th><th>Dedução</th></tr>
+              </thead>
+              <tbody>
+                {FAIXAS_IRRF.map((f, i) => {
+                  const prev = i > 0 ? FAIXAS_IRRF[i - 1].teto : 0;
+                  const label = f.teto === Infinity
+                    ? `Acima de ${fmt(prev)}`
+                    : i === 0
+                      ? `Até ${fmt(f.teto)}`
+                      : `${fmt(prev + 0.01)} a ${fmt(f.teto)}`;
+                  return <tr key={i}><td>{label}</td><td>{(f.aliq * 100).toFixed(1).replace(".", ",")}%</td><td>{fmt(f.deducao)}</td></tr>;
+                })}
+              </tbody>
+            </table>
+            <p className="info-note">Em 2026, quem ganha até R$ 5.000 é isento (redutor cobre o imposto). Entre R$ 5.000 e R$ 7.350 há redução parcial. Acima de R$ 7.350 a tabela se aplica integralmente. Não considera dependentes ou outras deduções.</p>
+          </div>
+
+          <div className="info-section">
+            <h4>FGTS sobre verbas rescisórias <span className="info-badge info-badge-blue">Depositado</span></h4>
+            <p>A empresa deve depositar 8% sobre o saldo de salário, 13º proporcional e aviso prévio indenizado na conta do FGTS do funcionário.</p>
+            <div className="info-formula">8% × (Saldo de salário + 13º + Aviso prévio indenizado)</div>
+            <p className="info-note">Esse valor vai para a conta do FGTS, não é pago diretamente ao funcionário junto com as verbas.</p>
+          </div>
+
+          <div className="info-section">
+            <h4>Multa do FGTS <span className="info-badge info-badge-blue">Depositado</span></h4>
+            <p>É uma multa que a empresa paga sobre o total acumulado de FGTS do funcionário (saldo anterior + depósito das verbas rescisórias).</p>
+            <div className="info-formula">Total do FGTS acumulado × percentual da multa</div>
+            <div className="info-tipo-grid">
+              <div className="info-tipo-card">
+                <strong>Sem justa causa</strong>
+                Multa de 40% sobre o total do FGTS.
+              </div>
+              <div className="info-tipo-card">
+                <strong>Acordo mútuo</strong>
+                Multa de 20% sobre o total do FGTS.
+              </div>
+              <div className="info-tipo-card">
+                <strong>Pedido de demissão</strong>
+                Sem multa (0%).
+              </div>
+              <div className="info-tipo-card">
+                <strong>Justa causa</strong>
+                Sem multa (0%).
+              </div>
+            </div>
+          </div>
+
+          <div className="info-section">
+            <h4>Resumo por tipo de rescisão</h4>
+            <div className="info-table-wrap"><table className="info-table">
+              <thead>
+                <tr>
+                  <th>Verba</th>
+                  <th>Sem justa causa</th>
+                  <th>Justa causa</th>
+                  <th>Pedido demissão</th>
+                  <th>Acordo mútuo</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Saldo de salário</td><td>Sim</td><td>Sim</td><td>Sim</td><td>Sim</td></tr>
+                <tr><td>13º proporcional</td><td>Sim</td><td>Não</td><td>Sim</td><td>Sim</td></tr>
+                <tr><td>Férias proporcionais</td><td>Sim</td><td>Não</td><td>Sim</td><td>Sim</td></tr>
+                <tr><td>Férias vencidas</td><td>Sim</td><td>Sim</td><td>Sim</td><td>Sim</td></tr>
+                <tr><td>Aviso prévio</td><td>Integral</td><td>Não</td><td>Desconto</td><td>50%</td></tr>
+                <tr><td>INSS</td><td>Sim</td><td>Sim</td><td>Sim</td><td>Sim</td></tr>
+                <tr><td>IRRF</td><td>Sim</td><td>Sim</td><td>Sim</td><td>Sim</td></tr>
+                <tr><td>Multa FGTS</td><td>40%</td><td>Não</td><td>Não</td><td>20%</td></tr>
+              </tbody>
+            </table></div>
+          </div>
+        </React.Fragment>
+      );
+    }
+
+    function InfoPJ() {
+      return (
+        <React.Fragment>
+          <div className="info-section">
+            <p>No contrato PJ <strong>não existe vínculo trabalhista</strong>. Por isso, não há 13º salário, férias, FGTS ou INSS por padrão. Porém, alguns contratos PJ preveem o pagamento de 13º e férias — nesses casos, ative as opções correspondentes no formulário.</p>
+          </div>
+
+          <div className="info-section">
+            <h4>Saldo de pagamento <span className="info-badge info-badge-green">Crédito</span></h4>
+            <p>Valor proporcional aos dias trabalhados no mês do encerramento do contrato.</p>
+            <div className="info-formula">Valor mensal ÷ 30 × dias trabalhados no mês</div>
+          </div>
+
+          <div className="info-section">
+            <h4>Multa contratual <span className="info-badge info-badge-blue">Variável</span></h4>
+            <p>Percentual sobre o valor mensal previsto no contrato como penalidade por rescisão antecipada. Quem encerra o contrato antes do prazo pode ter que pagar a multa à outra parte.</p>
+            <div className="info-formula">Valor mensal × (percentual ÷ 100)</div>
+            <div className="info-tipo-grid">
+              <div className="info-tipo-card">
+                <strong>Contratante encerrou</strong>
+                O PJ recebe a multa (crédito).
+              </div>
+              <div className="info-tipo-card">
+                <strong>Prestador encerrou</strong>
+                O PJ paga a multa (desconto).
+              </div>
+              <div className="info-tipo-card">
+                <strong>Término / Acordo</strong>
+                Sem multa.
+              </div>
+            </div>
+          </div>
+
+          <div className="info-section">
+            <h4>Aviso prévio <span className="info-badge info-badge-blue">Variável</span></h4>
+            <p>Período de antecedência para comunicar o encerramento. O padrão é 30 dias, mas depende do que foi combinado no contrato.</p>
+            <div className="info-formula">Valor mensal ÷ 30 × dias de aviso prévio</div>
+            <div className="info-tipo-grid">
+              <div className="info-tipo-card">
+                <strong>Contratante encerrou</strong>
+                Se não cumpriu o aviso, PJ recebe indenização (crédito).
+              </div>
+              <div className="info-tipo-card">
+                <strong>Prestador encerrou</strong>
+                Se não cumpriu o aviso, PJ tem desconto.
+              </div>
+              <div className="info-tipo-card">
+                <strong>Término / Acordo</strong>
+                Sem aviso prévio.
+              </div>
+            </div>
+          </div>
+
+          <div className="info-section">
+            <h4>13º proporcional <span className="info-badge info-badge-yellow">Opcional</span></h4>
+            <p>Calculado apenas se o contrato PJ prevê esse benefício. Proporcional aos meses trabalhados no ano do encerramento, usando a regra dos 15 dias (mês com 15+ dias trabalhados conta como mês inteiro).</p>
+            <div className="info-formula">Valor mensal ÷ 12 × meses trabalhados no ano</div>
+          </div>
+
+          <div className="info-section">
+            <h4>Férias proporcionais + 1/3 <span className="info-badge info-badge-yellow">Opcional</span></h4>
+            <p>Calculado apenas se o contrato PJ prevê esse benefício. Proporcional aos meses desde o último aniversário de contrato, acrescido de 1/3 constitucional. Usa a regra dos 15 dias.</p>
+            <div className="info-formula">(Valor mensal ÷ 12 × meses) + 1/3</div>
+          </div>
+
+          <div className="info-section">
+            <h4>Resumo por tipo de encerramento</h4>
+            <div className="info-table-wrap"><table className="info-table">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Contratante encerrou</th>
+                  <th>Prestador encerrou</th>
+                  <th>Término</th>
+                  <th>Acordo</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Saldo de pagamento</td><td>Sim</td><td>Sim</td><td>Sim</td><td>Sim</td></tr>
+                <tr><td>Multa contratual</td><td>Recebe</td><td>Paga</td><td>Não</td><td>Não</td></tr>
+                <tr><td>Aviso prévio</td><td>Recebe</td><td>Paga</td><td>Não</td><td>Não</td></tr>
+                <tr><td>13º proporcional</td><td colSpan="4">Se previsto em contrato (opcional)</td></tr>
+                <tr><td>Férias proporcionais + 1/3</td><td colSpan="4">Se previsto em contrato (opcional)</td></tr>
+              </tbody>
+            </table></div>
+          </div>
+        </React.Fragment>
+      );
+    }
+
+    // ==================== App principal ====================
+    function App({ onLogout }) {
+      const STORAGE_KEY = "rescisoes_clt";
+
+      const [registros, setRegistros] = useState(() => {
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          return saved ? JSON.parse(saved) : [];
+        } catch {
+          return [];
+        }
+      });
+
+      const [editando, setEditando] = useState(null);
+      const [detalheAtual, setDetalheAtual] = useState(null);
+      const [highlightDetalhe, setHighlightDetalhe] = useState(false);
+      const [toasts, setToasts] = useState([]);
+      const [modalExcluir, setModalExcluir] = useState(null);
+      const [regime, setRegime] = useState("pj");
+      const [showInfo, setShowInfo] = useState(false);
+      const detalheRef = useRef(null);
+      const toastTimersRef = useRef([]);
+
+      useEffect(() => {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(registros));
+      }, [registros]);
+
+      useEffect(() => {
+        return () => toastTimersRef.current.forEach(clearTimeout);
+      }, []);
+
+      const showToast = useCallback((text) => {
+        const id = Date.now();
+        setToasts((prev) => [...prev, { id, text }]);
+        const timer = setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3000);
+        toastTimersRef.current.push(timer);
+      }, []);
+
+      const scrollToDetalhe = useCallback(() => {
+        setTimeout(() => {
+          if (detalheRef.current) {
+            detalheRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }, 50);
+      }, []);
+
+      const handleCalcular = useCallback((dados, resultado) => {
+        if (editando) {
+          setRegistros((prev) =>
+            prev.map((r) => (r.id === editando.id ? { ...r, dados, resultado } : r))
+          );
+          setDetalheAtual({ id: editando.id, dados, resultado });
+          setEditando(null);
+          showToast("Registro atualizado com sucesso!");
+        } else {
+          const novoRegistro = {
+            id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+            dados,
+            resultado,
+            criadoEm: new Date().toISOString(),
+          };
+          setRegistros((prev) => [...prev, novoRegistro]);
+          setDetalheAtual(novoRegistro);
+          showToast("Cálculo realizado com sucesso!");
+        }
+        setHighlightDetalhe(true);
+        setTimeout(() => setHighlightDetalhe(false), 700);
+        scrollToDetalhe();
+      }, [editando, showToast, scrollToDetalhe]);
+
+      const handleEditar = useCallback((registro) => {
+        setEditando(registro);
+        setDetalheAtual(null);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }, []);
+
+      const handleExcluir = useCallback((id) => {
+        setModalExcluir(id);
+      }, []);
+
+      const confirmarExclusao = useCallback(() => {
+        const id = modalExcluir;
+        setRegistros((prev) => prev.filter((r) => r.id !== id));
+        if (detalheAtual?.id === id) setDetalheAtual(null);
+        if (editando?.id === id) setEditando(null);
+        setModalExcluir(null);
+        showToast("Registro excluído.");
+      }, [modalExcluir, detalheAtual, editando, showToast]);
+
+      const handleCancelarEdicao = useCallback(() => {
+        setEditando(null);
+      }, []);
+
+      const cancelarExclusao = useCallback(() => {
+        setModalExcluir(null);
+      }, []);
+
+      const handleVerDetalhe = useCallback((registro) => {
+        setDetalheAtual(registro);
+        setHighlightDetalhe(true);
+        setTimeout(() => setHighlightDetalhe(false), 700);
+        scrollToDetalhe();
+      }, [scrollToDetalhe]);
+
+      const handleExportar = useCallback(() => {
+        exportarExcel(registros);
+        showToast("Planilha Excel exportada!");
+      }, [registros, showToast]);
+
+      const handleImprimir = useCallback((registro) => {
+        gerarRecibo(registro);
+      }, []);
+
+      return (
+        <>
+          <Toast messages={toasts} />
+          {modalExcluir && (
+            <ConfirmModal
+              title="Excluir registro"
+              message="Tem certeza que deseja excluir este registro? Essa ação não pode ser desfeita."
+              onConfirm={confirmarExclusao}
+              onCancel={cancelarExclusao}
+            />
+          )}
+          <header>
+            <h1>Calculadora de Rescisão</h1>
+            <p key={regime}>{regime === "clt" ? "Simulador de verbas rescisórias conforme a legislação trabalhista" : "Simulador de encerramento de contrato PJ"}</p>
+            <button type="button" className="btn-logout" onClick={onLogout}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+              Sair
+            </button>
+          </header>
+          <div className="container">
+            <div className="info-toggle">
+              <button type="button" onClick={() => setShowInfo((v) => !v)}>
+                <span className="info-icon">i</span>
+                {showInfo ? "Fechar informações" : "Sobre os cálculos"}
+              </button>
+            </div>
+            {showInfo && (
+              <div className="disclaimer">
+                <InfoPanel />
+              </div>
+            )}
+
+            <Formulario
+              onCalcular={handleCalcular}
+              editando={editando}
+              onCancelarEdicao={handleCancelarEdicao}
+              regime={regime}
+              onRegimeChange={setRegime}
+            />
+
+            {detalheAtual && (
+              <Detalhamento
+                ref={detalheRef}
+                resultado={detalheAtual.resultado}
+                dados={detalheAtual.dados}
+                highlight={highlightDetalhe}
+                onImprimir={handleImprimir}
+              />
+            )}
+
+            <TabelaRegistros
+              registros={registros}
+              onEditar={handleEditar}
+              onExcluir={handleExcluir}
+              onExportar={handleExportar}
+              onVerDetalhe={handleVerDetalhe}
+              onImprimir={handleImprimir}
+            />
+          </div>
+        </>
+      );
+    }
+
+    function Root() {
+      const [authed, setAuthed] = useState(isAuthenticated);
+      const handleLogout = useCallback(() => {
+        sessionStorage.removeItem(AUTH_KEY);
+        setAuthed(false);
+      }, []);
+      if (!authed) return <LoginScreen onLogin={() => setAuthed(true)} />;
+      return <App onLogout={handleLogout} />;
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<Root />);
+  </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# Claude Code settings (pode conter senhas/segredos)
+.claude/settings.local.json
+
+# Ambiente
+.env
+.env.*
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
