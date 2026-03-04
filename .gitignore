@@ -5,6 +5,11 @@
 .env
 .env.*
 
+# Build artifacts
+node_modules/
+package.json
+package-lock.json
+
 # OS
 Thumbs.db
 Desktop.ini

@@ -5,10 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Calculadora de Rescisão</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231a5276'/%3E%3Ctext x='16' y='23' font-size='20' text-anchor='middle' fill='white' font-family='Arial'%3E%24%3C/text%3E%3C/svg%3E" />
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script crossorigin src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script crossorigin="anonymous" src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z"></script>
+  <script crossorigin="anonymous" src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1"></script>
+  <script crossorigin="anonymous" src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" integrity="sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1131,25 +1130,31 @@
 <body>
   <div id="root"></div>
 
-  <script type="text/babel">
-    const { useState, useEffect, useCallback, useRef } = React;
 
+  <script src="calc.js"></script>
+  <script>
+    const {
+      useState,
+      useEffect,
+      useCallback,
+      useRef
+    } = React;
+    
     // ==================== Autenticação ====================
     const PASS_HASH = "499791c1224940e9dc3da36594b19e3d91bff794dff580e4ffa43269eee41d64";
     const AUTH_KEY = "rescisao_auth";
-
     async function hashSHA256(text) {
       const encoder = new TextEncoder();
       const data = encoder.encode(text);
       const buffer = await crypto.subtle.digest("SHA-256", data);
-      return Array.from(new Uint8Array(buffer)).map((b) => b.toString(16).padStart(2, "0")).join("");
+      return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, "0")).join("");
     }
-
     function isAuthenticated() {
       return sessionStorage.getItem(AUTH_KEY) === "1";
     }
-
-    function LoginScreen({ onLogin }) {
+    function LoginScreen({
+      onLogin
+    }) {
       const [pw, setPw] = useState("");
       const [error, setError] = useState(false);
       const [showPw, setShowPw] = useState(false);
@@ -1157,16 +1162,18 @@
       const [countdown, setCountdown] = useState(0);
       const attemptsRef = useRef(0);
       const inputRef = useRef(null);
-
-      useEffect(() => { if (inputRef.current) inputRef.current.focus(); }, []);
-
       useEffect(() => {
-        if (countdown <= 0) { setLocked(false); return; }
-        const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
+        if (inputRef.current) inputRef.current.focus();
+      }, []);
+      useEffect(() => {
+        if (countdown <= 0) {
+          setLocked(false);
+          return;
+        }
+        const t = setTimeout(() => setCountdown(c => c - 1), 1000);
         return () => clearTimeout(t);
       }, [countdown]);
-
-      const handleSubmit = async (e) => {
+      const handleSubmit = async e => {
         e.preventDefault();
         if (locked) return;
         const hash = await hashSHA256(pw);
@@ -1186,487 +1193,117 @@
           if (inputRef.current) inputRef.current.focus();
         }
       };
-
-      return (
-        <div className="login-wrapper">
-          <form className="login-card" onSubmit={handleSubmit}>
-            <h1>Calculadora de Rescisão</h1>
-            <p>Digite a senha para acessar o sistema</p>
-            <div className={`login-field ${error ? "login-error" : ""}`}>
-              <input
-                ref={inputRef}
-                type={showPw ? "text" : "password"}
-                value={pw}
-                onChange={(e) => { setPw(e.target.value); setError(false); }}
-                placeholder="Senha de acesso"
-                autoComplete="current-password"
-                disabled={locked}
-              />
-              <button type="button" className="login-toggle-pw" onClick={() => setShowPw((v) => !v)} aria-label={showPw ? "Ocultar senha" : "Mostrar senha"}>
-                {showPw ? (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-                    <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/>
-                    <line x1="1" y1="1" x2="23" y2="23"/>
-                  </svg>
-                ) : (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                )}
-              </button>
-            </div>
-            {error && !locked && <div className="login-error-msg">Senha incorreta. Tente novamente.</div>}
-            {locked && <div className="login-error-msg">Muitas tentativas. Aguarde {countdown}s...</div>}
-            <button type="submit" className="login-btn" disabled={locked}>
-              {locked ? `Aguarde ${countdown}s` : "Entrar"}
-            </button>
-          </form>
-        </div>
-      );
+      return React.createElement("div", {
+        className: "login-wrapper"
+      }, React.createElement("form", {
+        className: "login-card",
+        onSubmit: handleSubmit
+      }, React.createElement("h1", null, "Calculadora de Rescisão"), React.createElement("p", null, "Digite a senha para acessar o sistema"), React.createElement("div", {
+        className: `login-field ${error ? "login-error" : ""}`
+      }, React.createElement("input", {
+        ref: inputRef,
+        type: showPw ? "text" : "password",
+        value: pw,
+        onChange: e => {
+          setPw(e.target.value);
+          setError(false);
+        },
+        placeholder: "Senha de acesso",
+        autoComplete: "current-password",
+        disabled: locked
+      }), React.createElement("button", {
+        type: "button",
+        className: "login-toggle-pw",
+        onClick: () => setShowPw(v => !v),
+        "aria-label": showPw ? "Ocultar senha" : "Mostrar senha"
+      }, showPw ? React.createElement("svg", {
+        width: "20",
+        height: "20",
+        viewBox: "0 0 24 24",
+        fill: "none",
+        stroke: "currentColor",
+        strokeWidth: "2",
+        strokeLinecap: "round",
+        strokeLinejoin: "round"
+      }, React.createElement("path", {
+        d: "M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"
+      }), React.createElement("path", {
+        d: "M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"
+      }), React.createElement("path", {
+        d: "M14.12 14.12a3 3 0 1 1-4.24-4.24"
+      }), React.createElement("line", {
+        x1: "1",
+        y1: "1",
+        x2: "23",
+        y2: "23"
+      })) : React.createElement("svg", {
+        width: "20",
+        height: "20",
+        viewBox: "0 0 24 24",
+        fill: "none",
+        stroke: "currentColor",
+        strokeWidth: "2",
+        strokeLinecap: "round",
+        strokeLinejoin: "round"
+      }, React.createElement("path", {
+        d: "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"
+      }), React.createElement("circle", {
+        cx: "12",
+        cy: "12",
+        r: "3"
+      })))), error && !locked && React.createElement("div", {
+        className: "login-error-msg"
+      }, "Senha incorreta. Tente novamente."), locked && React.createElement("div", {
+        className: "login-error-msg"
+      }, "Muitas tentativas. Aguarde ", countdown, "s..."), React.createElement("button", {
+        type: "submit",
+        className: "login-btn",
+        disabled: locked
+      }, locked ? `Aguarde ${countdown}s` : "Entrar")));
     }
-
-    // ==================== Utilidades ====================
-    const fmt = (v) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-    const formatarData = (d) => d.split("-").reverse().join("/");
-
-    const escapeHtml = (str) => {
-      const div = document.createElement("div");
-      div.appendChild(document.createTextNode(str));
-      return div.innerHTML;
-    };
-
-    // Formata número para exibição monetária no input: 1234.5 -> "1.234,50"
-    const fmtMoney = (v) => {
-      if (v === "" || v == null) return "";
-      const num = typeof v === "string" ? parseFloat(v) : v;
-      if (isNaN(num)) return "";
-      return num.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    };
-
-    // Extrai número de string monetária: "1.234,50" -> 1234.5
-    const parseMoney = (str) => {
-      if (!str) return "";
-      const clean = str.replace(/\./g, "").replace(",", ".");
-      const num = parseFloat(clean);
-      return isNaN(num) ? "" : String(num);
-    };
-
-    const parseDate = (str) => {
-      const [y, m, d] = str.split("-").map(Number);
-      return new Date(y, m - 1, d);
-    };
-
-    const diasNoMes = (ano, mes) => new Date(ano, mes + 1, 0).getDate();
-
-    // Cria data clampeando o dia ao último dia do mês (evita overflow do JS)
-    const dataClamped = (ano, mes, dia) => {
-      const maxDia = diasNoMes(ano, mes);
-      return new Date(ano, mes, Math.min(dia, maxDia));
-    };
-
-    const diffAnos = (start, end) => {
-      let anos = end.getFullYear() - start.getFullYear();
-      const aniv = dataClamped(end.getFullYear(), start.getMonth(), start.getDate());
-      if (end < aniv) anos--;
-      return Math.max(anos, 0);
-    };
-
-    // ==================== Tabela INSS 2026 (progressiva) ====================
-    // Portaria Interministerial MPS/MF nº 13/2026
-    const FAIXAS_INSS = [
-      { teto: 1621.00,  aliq: 0.075 },
-      { teto: 2902.84,  aliq: 0.09  },
-      { teto: 4354.27,  aliq: 0.12  },
-      { teto: 8475.55,  aliq: 0.14  },
-    ];
-
-    function calcINSS(base) {
-      if (base <= 0) return 0;
-      let desconto = 0;
-      let anterior = 0;
-      for (const faixa of FAIXAS_INSS) {
-        if (base <= anterior) break;
-        const faixaBase = Math.min(base, faixa.teto) - anterior;
-        desconto += faixaBase * faixa.aliq;
-        anterior = faixa.teto;
-      }
-      return desconto;
-    }
-
-    // ==================== Tabela IRRF 2026 (progressiva + redutor) ====================
-    const FAIXAS_IRRF = [
-      { teto: 2428.80, aliq: 0,     deducao: 0      },
-      { teto: 2826.65, aliq: 0.075, deducao: 182.16 },
-      { teto: 3751.05, aliq: 0.15,  deducao: 394.16 },
-      { teto: 4664.68, aliq: 0.225, deducao: 675.49 },
-      { teto: Infinity, aliq: 0.275, deducao: 908.73 },
-    ];
-
-    function calcIRRF(base) {
-      if (base <= 0) return 0;
-      let irrf = 0;
-      for (const f of FAIXAS_IRRF) {
-        if (base <= f.teto) {
-          irrf = base * f.aliq - f.deducao;
-          break;
-        }
-      }
-      // Redutor 2026: isenção até R$ 5.000, redução parcial até R$ 7.350
-      let redutor = 0;
-      if (base <= 5000) {
-        redutor = irrf; // isento
-      } else if (base <= 7350) {
-        redutor = Math.max(0, 978.62 - 0.133145 * base);
-      }
-      return Math.max(0, irrf - redutor);
-    }
-
-    // ==================== Motor de cálculo ====================
-    function calcularRescisao(dados) {
-      const {
-        salario,
-        dataContratacao,
-        dataDemissao,
-        tipoRescisao,
-        feriasVencidas,
-        saldoFGTS,
-        avisoPrevioTrabalhado,
-      } = dados;
-
-      const inicio = parseDate(dataContratacao);
-      const fim = parseDate(dataDemissao);
-      const salarioDia = salario / 30;
-
-      // [FIX #7] Saldo de salário — cap em 30 dias
-      const diasTrabalhados = Math.min(fim.getDate(), 30);
-      const saldoSalario = salarioDia * diasTrabalhados;
-
-      // Anos completos de serviço
-      const anosServico = diffAnos(inicio, fim);
-
-      // Aviso prévio indenizado (dias)
-      let diasAvisoPrevio = 0;
-      let avisoPrevioIndenizado = 0;
-      // [FIX #3] Desconto aviso prévio para pedido de demissão
-      let descontoAvisoPrevio = 0;
-
-      if (!avisoPrevioTrabalhado) {
-        if (tipoRescisao === "sem_justa_causa") {
-          diasAvisoPrevio = Math.min(30 + anosServico * 3, 90);
-          avisoPrevioIndenizado = salarioDia * diasAvisoPrevio;
-        } else if (tipoRescisao === "acordo_mutuo") {
-          diasAvisoPrevio = Math.min(30 + anosServico * 3, 90);
-          avisoPrevioIndenizado = (salarioDia * diasAvisoPrevio) * 0.5;
-        } else if (tipoRescisao === "pedido_demissao") {
-          descontoAvisoPrevio = salarioDia * 30;
-        }
-      }
-
-      // Data de referência para proporcionais (projeta aviso prévio indenizado)
-      const dataRef = new Date(fim);
-      if (diasAvisoPrevio > 0 && !avisoPrevioTrabalhado) {
-        dataRef.setDate(dataRef.getDate() + diasAvisoPrevio);
-      }
-
-      // [FIX #1] 13º proporcional — respeita ano de contratação
-      let mesesDecimo = 0;
-      if (tipoRescisao !== "justa_causa") {
-        const anoRef = dataRef.getFullYear();
-        const anoInicio = inicio.getFullYear();
-
-        if (anoRef > anoInicio) {
-          // Contratado em ano anterior: contar desde janeiro
-          mesesDecimo = dataRef.getMonth() + (dataRef.getDate() >= 15 ? 1 : 0);
-        } else {
-          // Contratado no mesmo ano: contar desde o mês de contratação
-          mesesDecimo = dataRef.getMonth() - inicio.getMonth();
-          if (dataRef.getDate() >= 15) mesesDecimo++;
-          // Verificar se o primeiro mês teve >= 15 dias trabalhados
-          const diasNoMesContratacao = diasNoMes(anoInicio, inicio.getMonth());
-          const diasTrabPrimeiroMes = diasNoMesContratacao - inicio.getDate() + 1;
-          if (diasTrabPrimeiroMes < 15) mesesDecimo--;
-        }
-        mesesDecimo = Math.max(0, Math.min(12, mesesDecimo));
-      }
-      const decimoTerceiro = (salario / 12) * mesesDecimo;
-
-      // Férias vencidas + 1/3 (devidas em qualquer tipo de rescisão)
-      let feriasVencidasValor = 0;
-      if (feriasVencidas > 0) {
-        feriasVencidasValor = feriasVencidas * (salario + salario / 3);
-      }
-
-      // [FIX #2] Férias proporcionais + 1/3 — regra dos 15 dias implementada
-      let mesesFeriasProp = 0;
-      if (tipoRescisao !== "justa_causa") {
-        const diaAniv = inicio.getDate();
-        const mesAniv = inicio.getMonth();
-        let ultimoAniv = dataClamped(dataRef.getFullYear(), mesAniv, diaAniv);
-        if (ultimoAniv > dataRef) {
-          ultimoAniv = dataClamped(dataRef.getFullYear() - 1, mesAniv, diaAniv);
-        }
-
-        // Contar meses completos desde o último aniversário
-        let cursor = new Date(ultimoAniv);
-        let m = 0;
-        while (true) {
-          const proxMes = cursor.getMonth() + 1;
-          const proxAno = cursor.getFullYear() + (proxMes > 11 ? 1 : 0);
-          const proximo = dataClamped(proxAno, proxMes % 12, diaAniv);
-          if (proximo <= dataRef) {
-            m++;
-            cursor = proximo;
-          } else {
-            // Período parcial: verificar regra dos 15 dias
-            const diffMs = dataRef - cursor;
-            const diasParciais = Math.round(diffMs / (1000 * 60 * 60 * 24));
-            if (diasParciais >= 15) m++;
-            break;
-          }
-        }
-        mesesFeriasProp = Math.min(m, 12);
-      }
-      const feriasPropBase = (salario / 12) * mesesFeriasProp;
-      const feriasPropValor = feriasPropBase + feriasPropBase / 3;
-
-      // FGTS sobre verbas rescisórias (8%) — depositado na conta vinculada
-      const baseFGTS = saldoSalario + decimoTerceiro + avisoPrevioIndenizado;
-      const fgtsVerbas = baseFGTS * 0.08;
-
-      // Multa FGTS
-      const totalFGTSAcumulado = (saldoFGTS || 0) + fgtsVerbas;
-      // [FIX #5] Percentual correto por tipo
-      let percMultaFGTS = 0;
-      if (tipoRescisao === "sem_justa_causa") percMultaFGTS = 40;
-      else if (tipoRescisao === "acordo_mutuo") percMultaFGTS = 20;
-      const multaFGTS = totalFGTSAcumulado * (percMultaFGTS / 100);
-
-      // [FIX #4] INSS sobre saldo de salário E sobre 13º (separados)
-      const inssSalario = calcINSS(saldoSalario);
-      const inssDecimo = calcINSS(decimoTerceiro);
-
-      // IRRF sobre saldo de salário e sobre 13º (separados)
-      // Férias e aviso prévio indenizado são isentos de IRRF
-      const irrfSalario = calcIRRF(saldoSalario - inssSalario);
-      const irrfDecimo = calcIRRF(decimoTerceiro - inssDecimo);
-
-      // [FIX #6] Separação: verbas diretas vs. FGTS depositado
-      const totalVerbasBrutas =
-        saldoSalario +
-        avisoPrevioIndenizado +
-        decimoTerceiro +
-        feriasVencidasValor +
-        feriasPropValor;
-
-      const totalDescontos = inssSalario + inssDecimo + irrfSalario + irrfDecimo + descontoAvisoPrevio;
-      const totalLiquidoDireto = totalVerbasBrutas - totalDescontos;
-
-      const totalFGTSDepositado = fgtsVerbas + multaFGTS;
-      const totalGeral = totalLiquidoDireto + totalFGTSDepositado;
-
-      return {
-        saldoSalario,
-        diasTrabalhados,
-        avisoPrevioIndenizado,
-        diasAvisoPrevio,
-        descontoAvisoPrevio,
-        decimoTerceiro,
-        mesesDecimo,
-        feriasVencidasValor,
-        feriasVencidasQtd: feriasVencidas,
-        feriasPropValor,
-        mesesFeriasProp,
-        fgtsVerbas,
-        multaFGTS,
-        percMultaFGTS,
-        inssSalario,
-        inssDecimo,
-        irrfSalario,
-        irrfDecimo,
-        totalVerbasBrutas,
-        totalDescontos,
-        totalLiquidoDireto,
-        totalFGTSDepositado,
-        totalGeral,
-        // Alias para tabela de registros
-        totalLiquido: totalLiquidoDireto,
-      };
-    }
-
-    // ==================== Motor de cálculo PJ ====================
-    const TIPOS_RESCISAO_PJ = [
-      { value: "contratante", label: "Contratante encerrou" },
-      { value: "prestador", label: "Prestador encerrou" },
-      { value: "termino", label: "Término do contrato" },
-      { value: "acordo_mutuo_pj", label: "Acordo mútuo" },
-    ];
-
-    function calcularRescisaoPJ(dados) {
-      const {
-        salario,
-        dataContratacao,
-        dataDemissao,
-        tipoRescisaoPJ,
-        multaContratualPerc,
-        diasAvisoPrevioPJ,
-        avisoPrevioCumpridoPJ,
-        incluir13PJ,
-        incluirFeriasPJ,
-      } = dados;
-
-      const inicio = parseDate(dataContratacao);
-      const fim = parseDate(dataDemissao);
-      const valorDia = salario / 30;
-
-      // Saldo de pagamento
-      const diasTrabalhados = Math.min(fim.getDate(), 30);
-      const saldoPagamento = valorDia * diasTrabalhados;
-
-      // Multa contratual
-      const perc = parseFloat(multaContratualPerc) || 0;
-      let multaContratualCredito = 0;
-      let multaContratualDesconto = 0;
-      if (tipoRescisaoPJ === "contratante" && perc > 0) {
-        multaContratualCredito = salario * (perc / 100);
-      } else if (tipoRescisaoPJ === "prestador" && perc > 0) {
-        multaContratualDesconto = salario * (perc / 100);
-      }
-
-      // Aviso prévio
-      const dias = parseInt(diasAvisoPrevioPJ) || 0;
-      let avisoPrevioCredito = 0;
-      let avisoPrevioDesconto = 0;
-      if (!avisoPrevioCumpridoPJ) {
-        if (tipoRescisaoPJ === "contratante") {
-          avisoPrevioCredito = valorDia * dias;
-        } else if (tipoRescisaoPJ === "prestador") {
-          avisoPrevioDesconto = valorDia * dias;
-        }
-      }
-
-      // 13º proporcional (opcional — previsto em contrato)
-      let decimoTerceiro = 0;
-      let mesesDecimo = 0;
-      if (incluir13PJ) {
-        const anoFim = fim.getFullYear();
-        const anoInicio = inicio.getFullYear();
-        if (anoFim > anoInicio) {
-          mesesDecimo = fim.getMonth() + (fim.getDate() >= 15 ? 1 : 0);
-        } else {
-          mesesDecimo = fim.getMonth() - inicio.getMonth();
-          if (fim.getDate() >= 15) mesesDecimo++;
-          const diasNoMesContratacao = diasNoMes(anoInicio, inicio.getMonth());
-          const diasTrabPrimeiroMes = diasNoMesContratacao - inicio.getDate() + 1;
-          if (diasTrabPrimeiroMes < 15) mesesDecimo--;
-        }
-        mesesDecimo = Math.max(0, Math.min(12, mesesDecimo));
-        decimoTerceiro = (salario / 12) * mesesDecimo;
-      }
-
-      // Férias proporcionais + 1/3 (opcional — previsto em contrato)
-      let feriasPropValor = 0;
-      let mesesFeriasProp = 0;
-      if (incluirFeriasPJ) {
-        const diaAniv = inicio.getDate();
-        const mesAniv = inicio.getMonth();
-        let ultimoAniv = dataClamped(fim.getFullYear(), mesAniv, diaAniv);
-        if (ultimoAniv > fim) {
-          ultimoAniv = dataClamped(fim.getFullYear() - 1, mesAniv, diaAniv);
-        }
-        let cursor = new Date(ultimoAniv);
-        let m = 0;
-        while (true) {
-          const proxMes = cursor.getMonth() + 1;
-          const proxAno = cursor.getFullYear() + (proxMes > 11 ? 1 : 0);
-          const proximo = dataClamped(proxAno, proxMes % 12, diaAniv);
-          if (proximo <= fim) {
-            m++;
-            cursor = proximo;
-          } else {
-            const diffMs = fim - cursor;
-            const diasParciais = Math.round(diffMs / (1000 * 60 * 60 * 24));
-            if (diasParciais >= 15) m++;
-            break;
-          }
-        }
-        mesesFeriasProp = Math.min(m, 12);
-        const feriasPropBase = (salario / 12) * mesesFeriasProp;
-        feriasPropValor = feriasPropBase + feriasPropBase / 3;
-      }
-
-      const totalCreditos = saldoPagamento + multaContratualCredito + avisoPrevioCredito + decimoTerceiro + feriasPropValor;
-      const totalDescontos = multaContratualDesconto + avisoPrevioDesconto;
-      const totalLiquidoDireto = totalCreditos - totalDescontos;
-
-      return {
-        saldoPagamento,
-        diasTrabalhados,
-        multaContratualCredito,
-        multaContratualDesconto,
-        multaContratualPerc: perc,
-        avisoPrevioCredito,
-        avisoPrevioDesconto,
-        diasAvisoPrevioPJ: dias,
-        decimoTerceiro,
-        mesesDecimo,
-        feriasPropValor,
-        mesesFeriasProp,
-        totalCreditos,
-        totalDescontos,
-        totalLiquidoDireto,
-        totalFGTSDepositado: 0,
-        totalGeral: totalLiquidoDireto,
-        // Aliases for table
-        totalLiquido: totalLiquidoDireto,
-      };
-    }
-
-    // ==================== Constantes e utilitários compartilhados ====================
-    const TIPOS_RESCISAO = [
-      { value: "sem_justa_causa", label: "Sem justa causa" },
-      { value: "justa_causa", label: "Por justa causa" },
-      { value: "pedido_demissao", label: "Pedido de demissão" },
-      { value: "acordo_mutuo", label: "Acordo mútuo" },
-    ];
-
-    const tipoLabel = (dados) => {
-      const regime = dados.regime || "clt";
-      if (regime === "pj") return TIPOS_RESCISAO_PJ.find((t) => t.value === dados.tipoRescisaoPJ)?.label || dados.tipoRescisaoPJ;
-      return TIPOS_RESCISAO.find((t) => t.value === dados.tipoRescisao)?.label || dados.tipoRescisao;
-    };
 
     // ==================== Componentes UI reutilizáveis ====================
-    function Toast({ messages }) {
+    function Toast({
+      messages
+    }) {
       if (messages.length === 0) return null;
-      return (
-        <div className="toast-container">
-          {messages.map((m) => (
-            <div key={m.id} className="toast">{m.text}</div>
-          ))}
-        </div>
-      );
+      return React.createElement("div", {
+        className: "toast-container"
+      }, messages.map(m => React.createElement("div", {
+        key: m.id,
+        className: "toast"
+      }, m.text)));
     }
-
-    function ConfirmModal({ title, message, onConfirm, onCancel }) {
+    function ConfirmModal({
+      title,
+      message,
+      onConfirm,
+      onCancel
+    }) {
       const modalRef = useRef(null);
-
       useEffect(() => {
         const prev = document.activeElement;
         if (modalRef.current) {
           const first = modalRef.current.querySelector("button");
           if (first) first.focus();
         }
-        const trap = (e) => {
-          if (e.key === "Escape") { onCancel(); return; }
+        const trap = e => {
+          if (e.key === "Escape") {
+            onCancel();
+            return;
+          }
           if (e.key !== "Tab") return;
           const btns = modalRef.current?.querySelectorAll("button");
           if (!btns || btns.length === 0) return;
-          const first = btns[0], last = btns[btns.length - 1];
-          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+          const first = btns[0],
+            last = btns[btns.length - 1];
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
         };
         document.addEventListener("keydown", trap);
         return () => {
@@ -1674,38 +1311,50 @@
           if (prev && prev.focus) prev.focus();
         };
       }, [onCancel]);
-
-      return (
-        <div className="modal-overlay" onClick={onCancel}>
-          <div className="modal-box" ref={modalRef} role="alertdialog" aria-modal="true" aria-labelledby="modal-title" onClick={(e) => e.stopPropagation()}>
-            <h3 id="modal-title">{title}</h3>
-            <p>{message}</p>
-            <div className="modal-actions">
-              <button className="btn btn-primary" onClick={onCancel}>Cancelar</button>
-              <button className="btn btn-danger" onClick={onConfirm}>Excluir</button>
-            </div>
-          </div>
-        </div>
-      );
+      return React.createElement("div", {
+        className: "modal-overlay",
+        onClick: onCancel
+      }, React.createElement("div", {
+        className: "modal-box",
+        ref: modalRef,
+        role: "alertdialog",
+        "aria-modal": "true",
+        "aria-labelledby": "modal-title",
+        onClick: e => e.stopPropagation()
+      }, React.createElement("h3", {
+        id: "modal-title"
+      }, title), React.createElement("p", null, message), React.createElement("div", {
+        className: "modal-actions"
+      }, React.createElement("button", {
+        className: "btn btn-primary",
+        onClick: onCancel
+      }, "Cancelar"), React.createElement("button", {
+        className: "btn btn-danger",
+        onClick: onConfirm
+      }, "Excluir"))));
     }
-
-    const DetailRow = ({ label, value, type, className }) => (
-      <div className={`dg-row ${className || ""}`}>
-        <div className="dg-label">{label}</div>
-        <div className={`dg-value ${type || ""}`}>
-          {type === "negative" ? `- ${fmt(value)}` : fmt(value)}
-        </div>
-      </div>
-    );
-
+    const DetailRow = ({
+      label,
+      value,
+      type,
+      className
+    }) => React.createElement("div", {
+      className: `dg-row ${className || ""}`
+    }, React.createElement("div", {
+      className: "dg-label"
+    }, label), React.createElement("div", {
+      className: `dg-value ${type || ""}`
+    }, type === "negative" ? `- ${fmt(value)}` : fmt(value)));
+    
     // ==================== Componentes de campo ====================
-    function Tip({ text }) {
+    function Tip({
+      text
+    }) {
       const [open, setOpen] = useState(false);
       const ref = useRef(null);
-
       useEffect(() => {
         if (!open) return;
-        const close = (e) => {
+        const close = e => {
           if (ref.current && !ref.current.contains(e.target)) setOpen(false);
         };
         document.addEventListener("click", close, true);
@@ -1715,23 +1364,29 @@
           document.removeEventListener("touchstart", close, true);
         };
       }, [open]);
-
-      return (
-        <span className={`tip-wrap ${open ? "tip-open" : ""}`} ref={ref}>
-          <span
-            className="tip-icon"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen((v) => !v); }}
-            role="button"
-            tabIndex={0}
-            aria-label="Informação"
-          >i</span>
-          <span className="tip-bubble">{text}</span>
-        </span>
-      );
+      return React.createElement("span", {
+        className: `tip-wrap ${open ? "tip-open" : ""}`,
+        ref: ref
+      }, React.createElement("span", {
+        className: "tip-icon",
+        onClick: e => {
+          e.preventDefault();
+          e.stopPropagation();
+          setOpen(v => !v);
+        },
+        role: "button",
+        tabIndex: 0,
+        "aria-label": "Informação"
+      }, "i"), React.createElement("span", {
+        className: "tip-bubble"
+      }, text));
     }
-
-    const FieldError = ({ error }) => error ? <div className="field-error">{error}</div> : null;
-
+    const FieldError = ({
+      error
+    }) => error ? React.createElement("div", {
+      className: "field-error"
+    }, error) : null;
+    
     // ==================== Componente: Formulário ====================
     const initialForm = {
       regime: "pj",
@@ -1750,14 +1405,18 @@
       diasAvisoPrevioPJ: "0",
       avisoPrevioCumpridoPJ: false,
       incluir13PJ: false,
-      incluirFeriasPJ: false,
+      incluirFeriasPJ: false
     };
-
-    function Formulario({ onCalcular, editando, onCancelarEdicao, regime, onRegimeChange }) {
+    function Formulario({
+      onCalcular,
+      editando,
+      onCancelarEdicao,
+      regime,
+      onRegimeChange
+    }) {
       const [form, setForm] = useState(initialForm);
       const [errors, setErrors] = useState({});
       const [regimeKey, setRegimeKey] = useState(0);
-
       useEffect(() => {
         if (editando) {
           const d = editando.dados;
@@ -1778,7 +1437,7 @@
             diasAvisoPrevioPJ: d.diasAvisoPrevioPJ != null ? String(d.diasAvisoPrevioPJ) : "0",
             avisoPrevioCumpridoPJ: d.avisoPrevioCumpridoPJ || false,
             incluir13PJ: d.incluir13PJ || false,
-            incluirFeriasPJ: d.incluirFeriasPJ || false,
+            incluirFeriasPJ: d.incluirFeriasPJ || false
           });
           setErrors({});
         } else {
@@ -1787,37 +1446,66 @@
           onRegimeChange("pj");
         }
       }, [editando, onRegimeChange]);
-
-      const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
-        if (errors[name]) setErrors((prev) => { const n = { ...prev }; delete n[name]; return n; });
+      const handleChange = e => {
+        const {
+          name,
+          value,
+          type,
+          checked
+        } = e.target;
+        setForm(f => ({
+          ...f,
+          [name]: type === "checkbox" ? checked : value
+        }));
+        if (errors[name]) setErrors(prev => {
+          const n = {
+            ...prev
+          };
+          delete n[name];
+          return n;
+        });
       };
-
-      const handleMoneyChange = (e) => {
-        const { name, value } = e.target;
+      const handleMoneyChange = e => {
+        const {
+          name,
+          value
+        } = e.target;
         // Permite apenas dígitos, vírgula e ponto durante digitação
         const allowed = value.replace(/[^\d.,]/g, "");
-        setForm((f) => ({ ...f, [name]: allowed }));
-        if (errors[name]) setErrors((prev) => { const n = { ...prev }; delete n[name]; return n; });
+        setForm(f => ({
+          ...f,
+          [name]: allowed
+        }));
+        if (errors[name]) setErrors(prev => {
+          const n = {
+            ...prev
+          };
+          delete n[name];
+          return n;
+        });
       };
-
-      const handleMoneyBlur = (e) => {
-        const { name, value } = e.target;
+      const handleMoneyBlur = e => {
+        const {
+          name,
+          value
+        } = e.target;
         if (!value) return;
         const num = parseMoney(value);
-        if (num !== "") setForm((f) => ({ ...f, [name]: fmtMoney(num) }));
+        if (num !== "") setForm(f => ({
+          ...f,
+          [name]: fmtMoney(num)
+        }));
       };
-
-      const setRegime = (r) => {
-        setForm((f) => ({ ...f, regime: r }));
+      const setRegime = r => {
+        setForm(f => ({
+          ...f,
+          regime: r
+        }));
         onRegimeChange(r);
-        setRegimeKey((k) => k + 1);
+        setRegimeKey(k => k + 1);
         setErrors({});
       };
-
       const isCLT = regime === "clt";
-
       const validate = () => {
         const errs = {};
         if (!form.nome.trim()) errs.nome = "Informe o nome.";
@@ -1833,12 +1521,10 @@
         setErrors(errs);
         return Object.keys(errs).length === 0;
       };
-
-      const handleSubmit = (e) => {
+      const handleSubmit = e => {
         e.preventDefault();
         if (!validate()) return;
         const salario = parseFloat(parseMoney(form.salario));
-
         if (isCLT) {
           const saldoFGTS = form.saldoFGTS ? parseFloat(parseMoney(form.saldoFGTS)) : 0;
           const dados = {
@@ -1850,7 +1536,7 @@
             tipoRescisao: form.tipoRescisao,
             feriasVencidas: parseInt(form.feriasVencidas, 10),
             saldoFGTS,
-            avisoPrevioTrabalhado: form.avisoPrevioTrabalhado,
+            avisoPrevioTrabalhado: form.avisoPrevioTrabalhado
           };
           const resultado = calcularRescisao(dados);
           onCalcular(dados, resultado);
@@ -1866,422 +1552,569 @@
             diasAvisoPrevioPJ: parseInt(form.diasAvisoPrevioPJ) || 0,
             avisoPrevioCumpridoPJ: form.avisoPrevioCumpridoPJ,
             incluir13PJ: form.incluir13PJ,
-            incluirFeriasPJ: form.incluirFeriasPJ,
+            incluirFeriasPJ: form.incluirFeriasPJ
           };
           const resultado = calcularRescisaoPJ(dados);
           onCalcular(dados, resultado);
         }
       };
-
-      return (
-        <form className="card" onSubmit={handleSubmit} noValidate>
-          <h2>{editando ? "Editar Registro" : "Dados da Rescisão"}</h2>
-          <div className="regime-toggle" role="tablist" aria-label="Regime de contratação">
-            <button type="button" role="tab" aria-selected={!isCLT} className={!isCLT ? "active" : ""} onClick={() => setRegime("pj")}>PJ</button>
-            <button type="button" role="tab" aria-selected={isCLT} className={isCLT ? "active" : ""} onClick={() => setRegime("clt")}>CLT</button>
-          </div>
-          <div className="form-grid">
-            <div className={`form-group form-group-full ${errors.nome ? "has-error" : ""}`}>
-              <label>
-                {isCLT ? "Nome do funcionário" : "Nome do prestador"} *
-                <Tip text={isCLT ? "Nome completo do trabalhador registrado em CLT." : "Nome da pessoa ou empresa que presta o serviço."} />
-              </label>
-              <input name="nome" value={form.nome} onChange={handleChange} placeholder={isCLT ? "Ex: João Silva" : "Ex: Empresa XYZ"} aria-required="true" />
-              <FieldError error={errors.nome} />
-            </div>
-            <div className={`form-group ${errors.dataContratacao ? "has-error" : ""}`}>
-              <label>
-                {isCLT ? "Data de contratação" : "Data de início do contrato"} *
-                <Tip text={isCLT ? "Data em que o funcionário começou a trabalhar na empresa." : "Data em que o contrato PJ passou a valer."} />
-              </label>
-              <input type="date" name="dataContratacao" value={form.dataContratacao} onChange={handleChange} aria-required="true" />
-              <FieldError error={errors.dataContratacao} />
-            </div>
-            <div className={`form-group ${errors.dataDemissao ? "has-error" : ""}`}>
-              <label>
-                {isCLT ? "Data de demissão" : "Data de encerramento"} *
-                <Tip text={isCLT ? "Último dia de trabalho do funcionário." : "Data em que o contrato PJ foi encerrado."} />
-              </label>
-              <input type="date" name="dataDemissao" value={form.dataDemissao} onChange={handleChange} aria-required="true" />
-              <FieldError error={errors.dataDemissao} />
-            </div>
-            <div className={`form-group ${errors.salario ? "has-error" : ""}`}>
-              <label>
-                {isCLT ? "Salário bruto (R$)" : "Valor mensal (R$)"} *
-                <Tip text={isCLT ? "Salário mensal antes dos descontos (INSS, IR, etc)." : "Valor mensal combinado no contrato de prestação de serviço."} />
-              </label>
-              <input type="text" inputMode="decimal" name="salario" value={form.salario} onChange={handleMoneyChange} onBlur={handleMoneyBlur} placeholder="R$ 0,00" aria-required="true" />
-              <FieldError error={errors.salario} />
-            </div>
-
-            {isCLT && (
-              <React.Fragment key={`clt-${regimeKey}`}>
-                <div className="form-group regime-fields">
-                  <label>
-                    Tipo de rescisão *
-                    <Tip text="Motivo do desligamento. Define quais verbas o funcionário tem direito a receber." />
-                  </label>
-                  <select name="tipoRescisao" value={form.tipoRescisao} onChange={handleChange} aria-required="true">
-                    {TIPOS_RESCISAO.map((t) => (
-                      <option key={t.value} value={t.value}>{t.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group regime-fields">
-                  <label>
-                    Férias vencidas <span className="opt">(opcional)</span>
-                    <Tip text="Períodos de férias que o funcionário tinha direito mas não tirou. Cada período vencido equivale a 1 salário + 1/3." />
-                  </label>
-                  <select name="feriasVencidas" value={form.feriasVencidas} onChange={handleChange}>
-                    {[0, 1, 2, 3].map((n) => (
-                      <option key={n} value={n}>{n} {n === 1 ? "período" : "períodos"}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group regime-fields">
-                  <label>
-                    Saldo FGTS (R$) <span className="opt">(opcional)</span>
-                    <Tip text="Valor total já depositado na conta do FGTS do funcionário. Usado para calcular a multa de 40% ou 20%." />
-                  </label>
-                  <input type="text" inputMode="decimal" name="saldoFGTS" value={form.saldoFGTS} onChange={handleMoneyChange} onBlur={handleMoneyBlur} placeholder="R$ 0,00" />
-                </div>
-                <div className="form-group form-group-full regime-fields">
-                  <div className="checkbox-group">
-                    <input type="checkbox" name="avisoPrevioTrabalhado" id="avisoPrevio" checked={form.avisoPrevioTrabalhado} onChange={handleChange} />
-                    <label htmlFor="avisoPrevio">
-                      Aviso prévio trabalhado <span className="opt">(opcional)</span>
-                      <Tip text="Marque se o funcionário cumpriu o aviso prévio trabalhando. Se não, o valor será indenizado ou descontado." />
-                    </label>
-                  </div>
-                </div>
-              </React.Fragment>
-            )}
-
-            {!isCLT && (
-              <React.Fragment key={`pj-${regimeKey}`}>
-                <div className="form-group regime-fields">
-                  <label>
-                    Tipo de encerramento *
-                    <Tip text="Quem decidiu encerrar o contrato. Define se há multa a pagar ou a receber." />
-                  </label>
-                  <select name="tipoRescisaoPJ" value={form.tipoRescisaoPJ} onChange={handleChange} aria-required="true">
-                    {TIPOS_RESCISAO_PJ.map((t) => (
-                      <option key={t.value} value={t.value}>{t.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group regime-fields">
-                  <label>
-                    Multa contratual (%) <span className="opt">(opcional)</span>
-                    <Tip text="Percentual sobre o valor mensal previsto no contrato como multa por rescisão antecipada." />
-                  </label>
-                  <input type="number" name="multaContratualPerc" value={form.multaContratualPerc} onChange={handleChange} placeholder="0" min="0" step="0.1" />
-                </div>
-                <div className="form-group regime-fields">
-                  <label>
-                    Dias de aviso prévio <span className="opt">(opcional)</span>
-                    <Tip text="Quantidade de dias de aviso prévio prevista no contrato. O padrão é 30 dias." />
-                  </label>
-                  <input type="number" name="diasAvisoPrevioPJ" value={form.diasAvisoPrevioPJ} onChange={handleChange} placeholder="30" min="0" step="1" />
-                </div>
-                <div className="form-group form-group-full regime-fields">
-                  <div className="checkbox-group">
-                    <input type="checkbox" name="avisoPrevioCumpridoPJ" id="avisoPrevioPJ" checked={form.avisoPrevioCumpridoPJ} onChange={handleChange} />
-                    <label htmlFor="avisoPrevioPJ">
-                      Aviso prévio cumprido <span className="opt">(opcional)</span>
-                      <Tip text="Marque se o aviso prévio foi cumprido. Se não, gera indenização ou desconto dependendo de quem encerrou." />
-                    </label>
-                  </div>
-                </div>
-                <div className="form-group form-group-full regime-fields">
-                  <div className="checkbox-group">
-                    <input type="checkbox" name="incluir13PJ" id="incluir13PJ" checked={form.incluir13PJ} onChange={handleChange} />
-                    <label htmlFor="incluir13PJ">
-                      Incluir 13º salário proporcional <span className="opt">(opcional)</span>
-                      <Tip text="Marque se o contrato PJ prevê pagamento de 13º salário. Será calculado proporcionalmente aos meses trabalhados no ano." />
-                    </label>
-                  </div>
-                </div>
-                <div className="form-group form-group-full regime-fields">
-                  <div className="checkbox-group">
-                    <input type="checkbox" name="incluirFeriasPJ" id="incluirFeriasPJ" checked={form.incluirFeriasPJ} onChange={handleChange} />
-                    <label htmlFor="incluirFeriasPJ">
-                      Incluir férias proporcionais + 1/3 <span className="opt">(opcional)</span>
-                      <Tip text="Marque se o contrato PJ prevê pagamento de férias. Será calculado proporcionalmente aos meses desde o último aniversário de contrato, acrescido de 1/3." />
-                    </label>
-                  </div>
-                </div>
-              </React.Fragment>
-            )}
-          </div>
-          <div className="form-actions">
-            <button type="submit" className="btn btn-primary">
-              {editando ? "Salvar Alterações" : isCLT ? "Calcular Rescisão" : "Calcular Encerramento"}
-            </button>
-            {editando && (
-              <button type="button" className="btn btn-danger" onClick={onCancelarEdicao}>
-                Cancelar
-              </button>
-            )}
-          </div>
-        </form>
-      );
+      return React.createElement("form", {
+        className: "card",
+        onSubmit: handleSubmit,
+        noValidate: true
+      }, React.createElement("h2", null, editando ? "Editar Registro" : "Dados da Rescisão"), React.createElement("div", {
+        className: "regime-toggle",
+        role: "tablist",
+        "aria-label": "Regime de contratação"
+      }, React.createElement("button", {
+        type: "button",
+        role: "tab",
+        "aria-selected": !isCLT,
+        className: !isCLT ? "active" : "",
+        onClick: () => setRegime("pj")
+      }, "PJ"), React.createElement("button", {
+        type: "button",
+        role: "tab",
+        "aria-selected": isCLT,
+        className: isCLT ? "active" : "",
+        onClick: () => setRegime("clt")
+      }, "CLT")), React.createElement("div", {
+        className: "form-grid"
+      }, React.createElement("div", {
+        className: `form-group form-group-full ${errors.nome ? "has-error" : ""}`
+      }, React.createElement("label", null, isCLT ? "Nome do funcionário" : "Nome do prestador", " *", React.createElement(Tip, {
+        text: isCLT ? "Nome completo do trabalhador registrado em CLT." : "Nome da pessoa ou empresa que presta o serviço."
+      })), React.createElement("input", {
+        name: "nome",
+        value: form.nome,
+        onChange: handleChange,
+        placeholder: isCLT ? "Ex: João Silva" : "Ex: Empresa XYZ",
+        "aria-required": "true"
+      }), React.createElement(FieldError, {
+        error: errors.nome
+      })), React.createElement("div", {
+        className: `form-group ${errors.dataContratacao ? "has-error" : ""}`
+      }, React.createElement("label", null, isCLT ? "Data de contratação" : "Data de início do contrato", " *", React.createElement(Tip, {
+        text: isCLT ? "Data em que o funcionário começou a trabalhar na empresa." : "Data em que o contrato PJ passou a valer."
+      })), React.createElement("input", {
+        type: "date",
+        name: "dataContratacao",
+        value: form.dataContratacao,
+        onChange: handleChange,
+        "aria-required": "true"
+      }), React.createElement(FieldError, {
+        error: errors.dataContratacao
+      })), React.createElement("div", {
+        className: `form-group ${errors.dataDemissao ? "has-error" : ""}`
+      }, React.createElement("label", null, isCLT ? "Data de demissão" : "Data de encerramento", " *", React.createElement(Tip, {
+        text: isCLT ? "Último dia de trabalho do funcionário." : "Data em que o contrato PJ foi encerrado."
+      })), React.createElement("input", {
+        type: "date",
+        name: "dataDemissao",
+        value: form.dataDemissao,
+        onChange: handleChange,
+        "aria-required": "true"
+      }), React.createElement(FieldError, {
+        error: errors.dataDemissao
+      })), React.createElement("div", {
+        className: `form-group ${errors.salario ? "has-error" : ""}`
+      }, React.createElement("label", null, isCLT ? "Salário bruto (R$)" : "Valor mensal (R$)", " *", React.createElement(Tip, {
+        text: isCLT ? "Salário mensal antes dos descontos (INSS, IR, etc)." : "Valor mensal combinado no contrato de prestação de serviço."
+      })), React.createElement("input", {
+        type: "text",
+        inputMode: "decimal",
+        name: "salario",
+        value: form.salario,
+        onChange: handleMoneyChange,
+        onBlur: handleMoneyBlur,
+        placeholder: "R$ 0,00",
+        "aria-required": "true"
+      }), React.createElement(FieldError, {
+        error: errors.salario
+      })), isCLT && React.createElement(React.Fragment, {
+        key: `clt-${regimeKey}`
+      }, React.createElement("div", {
+        className: "form-group regime-fields"
+      }, React.createElement("label", null, "Tipo de rescisão *", React.createElement(Tip, {
+        text: "Motivo do desligamento. Define quais verbas o funcionário tem direito a receber."
+      })), React.createElement("select", {
+        name: "tipoRescisao",
+        value: form.tipoRescisao,
+        onChange: handleChange,
+        "aria-required": "true"
+      }, TIPOS_RESCISAO.map(t => React.createElement("option", {
+        key: t.value,
+        value: t.value
+      }, t.label)))), React.createElement("div", {
+        className: "form-group regime-fields"
+      }, React.createElement("label", null, "Férias vencidas ", React.createElement("span", {
+        className: "opt"
+      }, "(opcional)"), React.createElement(Tip, {
+        text: "Períodos de férias que o funcionário tinha direito mas não tirou. Cada período vencido equivale a 1 salário + 1/3."
+      })), React.createElement("select", {
+        name: "feriasVencidas",
+        value: form.feriasVencidas,
+        onChange: handleChange
+      }, [0, 1, 2, 3].map(n => React.createElement("option", {
+        key: n,
+        value: n
+      }, n, " ", n === 1 ? "período" : "períodos")))), React.createElement("div", {
+        className: "form-group regime-fields"
+      }, React.createElement("label", null, "Saldo FGTS (R$) ", React.createElement("span", {
+        className: "opt"
+      }, "(opcional)"), React.createElement(Tip, {
+        text: "Valor total já depositado na conta do FGTS do funcionário. Usado para calcular a multa de 40% ou 20%."
+      })), React.createElement("input", {
+        type: "text",
+        inputMode: "decimal",
+        name: "saldoFGTS",
+        value: form.saldoFGTS,
+        onChange: handleMoneyChange,
+        onBlur: handleMoneyBlur,
+        placeholder: "R$ 0,00"
+      })), React.createElement("div", {
+        className: "form-group form-group-full regime-fields"
+      }, React.createElement("div", {
+        className: "checkbox-group"
+      }, React.createElement("input", {
+        type: "checkbox",
+        name: "avisoPrevioTrabalhado",
+        id: "avisoPrevio",
+        checked: form.avisoPrevioTrabalhado,
+        onChange: handleChange
+      }), React.createElement("label", {
+        htmlFor: "avisoPrevio"
+      }, "Aviso prévio trabalhado ", React.createElement("span", {
+        className: "opt"
+      }, "(opcional)"), React.createElement(Tip, {
+        text: "Marque se o funcionário cumpriu o aviso prévio trabalhando. Se não, o valor será indenizado ou descontado."
+      }))))), !isCLT && React.createElement(React.Fragment, {
+        key: `pj-${regimeKey}`
+      }, React.createElement("div", {
+        className: "form-group regime-fields"
+      }, React.createElement("label", null, "Tipo de encerramento *", React.createElement(Tip, {
+        text: "Quem decidiu encerrar o contrato. Define se há multa a pagar ou a receber."
+      })), React.createElement("select", {
+        name: "tipoRescisaoPJ",
+        value: form.tipoRescisaoPJ,
+        onChange: handleChange,
+        "aria-required": "true"
+      }, TIPOS_RESCISAO_PJ.map(t => React.createElement("option", {
+        key: t.value,
+        value: t.value
+      }, t.label)))), React.createElement("div", {
+        className: "form-group regime-fields"
+      }, React.createElement("label", null, "Multa contratual (%) ", React.createElement("span", {
+        className: "opt"
+      }, "(opcional)"), React.createElement(Tip, {
+        text: "Percentual sobre o valor mensal previsto no contrato como multa por rescisão antecipada."
+      })), React.createElement("input", {
+        type: "number",
+        name: "multaContratualPerc",
+        value: form.multaContratualPerc,
+        onChange: handleChange,
+        placeholder: "0",
+        min: "0",
+        step: "0.1"
+      })), React.createElement("div", {
+        className: "form-group regime-fields"
+      }, React.createElement("label", null, "Dias de aviso prévio ", React.createElement("span", {
+        className: "opt"
+      }, "(opcional)"), React.createElement(Tip, {
+        text: "Quantidade de dias de aviso prévio prevista no contrato. O padrão é 30 dias."
+      })), React.createElement("input", {
+        type: "number",
+        name: "diasAvisoPrevioPJ",
+        value: form.diasAvisoPrevioPJ,
+        onChange: handleChange,
+        placeholder: "30",
+        min: "0",
+        step: "1"
+      })), React.createElement("div", {
+        className: "form-group form-group-full regime-fields"
+      }, React.createElement("div", {
+        className: "checkbox-group"
+      }, React.createElement("input", {
+        type: "checkbox",
+        name: "avisoPrevioCumpridoPJ",
+        id: "avisoPrevioPJ",
+        checked: form.avisoPrevioCumpridoPJ,
+        onChange: handleChange
+      }), React.createElement("label", {
+        htmlFor: "avisoPrevioPJ"
+      }, "Aviso prévio cumprido ", React.createElement("span", {
+        className: "opt"
+      }, "(opcional)"), React.createElement(Tip, {
+        text: "Marque se o aviso prévio foi cumprido. Se não, gera indenização ou desconto dependendo de quem encerrou."
+      })))), React.createElement("div", {
+        className: "form-group form-group-full regime-fields"
+      }, React.createElement("div", {
+        className: "checkbox-group"
+      }, React.createElement("input", {
+        type: "checkbox",
+        name: "incluir13PJ",
+        id: "incluir13PJ",
+        checked: form.incluir13PJ,
+        onChange: handleChange
+      }), React.createElement("label", {
+        htmlFor: "incluir13PJ"
+      }, "Incluir 13º salário proporcional ", React.createElement("span", {
+        className: "opt"
+      }, "(opcional)"), React.createElement(Tip, {
+        text: "Marque se o contrato PJ prevê pagamento de 13º salário. Será calculado proporcionalmente aos meses trabalhados no ano."
+      })))), React.createElement("div", {
+        className: "form-group form-group-full regime-fields"
+      }, React.createElement("div", {
+        className: "checkbox-group"
+      }, React.createElement("input", {
+        type: "checkbox",
+        name: "incluirFeriasPJ",
+        id: "incluirFeriasPJ",
+        checked: form.incluirFeriasPJ,
+        onChange: handleChange
+      }), React.createElement("label", {
+        htmlFor: "incluirFeriasPJ"
+      }, "Incluir férias proporcionais + 1/3 ", React.createElement("span", {
+        className: "opt"
+      }, "(opcional)"), React.createElement(Tip, {
+        text: "Marque se o contrato PJ prevê pagamento de férias. Será calculado proporcionalmente aos meses desde o último aniversário de contrato, acrescido de 1/3."
+      })))))), React.createElement("div", {
+        className: "form-actions"
+      }, React.createElement("button", {
+        type: "submit",
+        className: "btn btn-primary"
+      }, editando ? "Salvar Alterações" : isCLT ? "Calcular Rescisão" : "Calcular Encerramento"), editando && React.createElement("button", {
+        type: "button",
+        className: "btn btn-danger",
+        onClick: onCancelarEdicao
+      }, "Cancelar")));
     }
-
+    
     // ==================== Componente: Detalhamento ====================
-    const Detalhamento = React.forwardRef(({ resultado, dados, highlight, onImprimir }, ref) => {
+    const Detalhamento = React.forwardRef(({
+      resultado,
+      dados,
+      highlight,
+      onImprimir
+    }, ref) => {
       if (!resultado) return null;
       const r = resultado;
       const regime = dados.regime || "clt";
       const Row = DetailRow;
-
       if (regime === "pj") {
-        const label = TIPOS_RESCISAO_PJ.find((t) => t.value === dados.tipoRescisaoPJ)?.label;
-        return (
-          <div className={`card ${highlight ? "card-highlight" : ""}`} ref={ref}>
-            <div className="detail-header">
-              <h2>Detalhamento — {dados.nome} ({label}) — PJ</h2>
-              {onImprimir && (
-                <button className="btn btn-primary btn-sm" onClick={() => onImprimir({ dados, resultado: r })}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 4, verticalAlign: "middle"}}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                  Imprimir
-                </button>
-              )}
-            </div>
-            <div className="detail-grid">
-              <Row label="CRÉDITOS" value={r.totalCreditos} className="dg-section" />
-              <Row label={`Saldo de pagamento (${r.diasTrabalhados} dias)`} value={r.saldoPagamento} type="positive" />
-              {r.multaContratualCredito > 0 && (
-                <Row label={`Multa contratual (${r.multaContratualPerc}%)`} value={r.multaContratualCredito} type="positive" />
-              )}
-              {r.avisoPrevioCredito > 0 && (
-                <Row label={`Indenização aviso prévio (${r.diasAvisoPrevioPJ} dias)`} value={r.avisoPrevioCredito} type="positive" />
-              )}
-              {r.decimoTerceiro > 0 && (
-                <Row label={`13º proporcional (${r.mesesDecimo}/12 avos)`} value={r.decimoTerceiro} type="positive" />
-              )}
-              {r.feriasPropValor > 0 && (
-                <Row label={`Férias proporcionais + 1/3 (${r.mesesFeriasProp}/12 avos)`} value={r.feriasPropValor} type="positive" />
-              )}
-              <Row label="DESCONTOS" value={r.totalDescontos} className="dg-section" />
-              {r.multaContratualDesconto > 0 && (
-                <Row label={`(-) Multa contratual devida (${r.multaContratualPerc}%)`} value={r.multaContratualDesconto} type="negative" />
-              )}
-              {r.avisoPrevioDesconto > 0 && (
-                <Row label={`(-) Desconto aviso prévio não cumprido (${r.diasAvisoPrevioPJ} dias)`} value={r.avisoPrevioDesconto} type="negative" />
-              )}
-              {r.totalDescontos === 0 && (
-                <Row label="Nenhum desconto" value={0} />
-              )}
-              <div className="dg-row dg-total">
-                <div className="dg-label">TOTAL LÍQUIDO</div>
-                <div className="dg-value">{fmt(r.totalLiquidoDireto)}</div>
-              </div>
-            </div>
-          </div>
-        );
+        const label = TIPOS_RESCISAO_PJ.find(t => t.value === dados.tipoRescisaoPJ)?.label;
+        return React.createElement("div", {
+          className: `card ${highlight ? "card-highlight" : ""}`,
+          ref: ref
+        }, React.createElement("div", {
+          className: "detail-header"
+        }, React.createElement("h2", null, "Detalhamento — ", dados.nome, " (", label, ") — PJ"), onImprimir && React.createElement("button", {
+          className: "btn btn-primary btn-sm",
+          onClick: () => onImprimir({
+            dados,
+            resultado: r
+          })
+        }, React.createElement("svg", {
+          width: "14",
+          height: "14",
+          viewBox: "0 0 24 24",
+          fill: "none",
+          stroke: "currentColor",
+          strokeWidth: "2",
+          strokeLinecap: "round",
+          strokeLinejoin: "round",
+          style: {
+            marginRight: 4,
+            verticalAlign: "middle"
+          }
+        }, React.createElement("polyline", {
+          points: "6 9 6 2 18 2 18 9"
+        }), React.createElement("path", {
+          d: "M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"
+        }), React.createElement("rect", {
+          x: "6",
+          y: "14",
+          width: "12",
+          height: "8"
+        })), "Imprimir")), React.createElement("div", {
+          className: "detail-grid"
+        }, React.createElement(Row, {
+          label: "CRÉDITOS",
+          value: r.totalCreditos,
+          className: "dg-section"
+        }), React.createElement(Row, {
+          label: `Saldo de pagamento (${r.diasTrabalhados} dias)`,
+          value: r.saldoPagamento,
+          type: "positive"
+        }), r.multaContratualCredito > 0 && React.createElement(Row, {
+          label: `Multa contratual (${r.multaContratualPerc}%)`,
+          value: r.multaContratualCredito,
+          type: "positive"
+        }), r.avisoPrevioCredito > 0 && React.createElement(Row, {
+          label: `Indenização aviso prévio (${r.diasAvisoPrevioPJ} dias)`,
+          value: r.avisoPrevioCredito,
+          type: "positive"
+        }), r.decimoTerceiro > 0 && React.createElement(Row, {
+          label: `13º proporcional (${r.mesesDecimo}/12 avos)`,
+          value: r.decimoTerceiro,
+          type: "positive"
+        }), r.feriasPropValor > 0 && React.createElement(Row, {
+          label: `Férias proporcionais + 1/3 (${r.mesesFeriasProp}/12 avos)`,
+          value: r.feriasPropValor,
+          type: "positive"
+        }), React.createElement(Row, {
+          label: "DESCONTOS",
+          value: r.totalDescontos,
+          className: "dg-section"
+        }), r.multaContratualDesconto > 0 && React.createElement(Row, {
+          label: `(-) Multa contratual devida (${r.multaContratualPerc}%)`,
+          value: r.multaContratualDesconto,
+          type: "negative"
+        }), r.avisoPrevioDesconto > 0 && React.createElement(Row, {
+          label: `(-) Desconto aviso prévio não cumprido (${r.diasAvisoPrevioPJ} dias)`,
+          value: r.avisoPrevioDesconto,
+          type: "negative"
+        }), r.totalDescontos === 0 && React.createElement(Row, {
+          label: "Nenhum desconto",
+          value: 0
+        }), React.createElement("div", {
+          className: "dg-row dg-total"
+        }, React.createElement("div", {
+          className: "dg-label"
+        }, "TOTAL LÍQUIDO"), React.createElement("div", {
+          className: "dg-value"
+        }, fmt(r.totalLiquidoDireto)))));
       }
-
-      const label = TIPOS_RESCISAO.find((t) => t.value === dados.tipoRescisao)?.label;
-      return (
-        <div className={`card ${highlight ? "card-highlight" : ""}`} ref={ref}>
-          <div className="detail-header">
-            <h2>Detalhamento — {dados.nome} ({label})</h2>
-            {onImprimir && (
-              <button className="btn btn-primary btn-sm" onClick={() => onImprimir({ dados, resultado: r })}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight: 4, verticalAlign: "middle"}}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                Imprimir
-              </button>
-            )}
-          </div>
-          <div className="detail-grid">
-            <Row label="VERBAS RESCISÓRIAS" value={r.totalVerbasBrutas} className="dg-section" />
-            <Row label={`Saldo de salário (${r.diasTrabalhados} dias)`} value={r.saldoSalario} type="positive" />
-            {r.avisoPrevioIndenizado > 0 && (
-              <Row label={`Aviso prévio indenizado (${r.diasAvisoPrevio} dias)`} value={r.avisoPrevioIndenizado} type="positive" />
-            )}
-            {r.decimoTerceiro > 0 && (
-              <Row label={`13º proporcional (${r.mesesDecimo}/12 avos)`} value={r.decimoTerceiro} type="positive" />
-            )}
-            {r.feriasVencidasValor > 0 && (
-              <Row label={`Férias vencidas + 1/3 (${r.feriasVencidasQtd} período${r.feriasVencidasQtd !== 1 ? "s" : ""})`} value={r.feriasVencidasValor} type="positive" />
-            )}
-            {r.feriasPropValor > 0 && (
-              <Row label={`Férias proporcionais + 1/3 (${r.mesesFeriasProp}/12 avos)`} value={r.feriasPropValor} type="positive" />
-            )}
-            <Row label="DESCONTOS" value={r.totalDescontos} className="dg-section" />
-            <Row label="(-) INSS sobre saldo de salário" value={r.inssSalario} type="negative" />
-            {r.inssDecimo > 0 && (
-              <Row label="(-) INSS sobre 13º proporcional" value={r.inssDecimo} type="negative" />
-            )}
-            {r.irrfSalario > 0 && (
-              <Row label="(-) IRRF sobre saldo de salário" value={r.irrfSalario} type="negative" />
-            )}
-            {r.irrfDecimo > 0 && (
-              <Row label="(-) IRRF sobre 13º proporcional" value={r.irrfDecimo} type="negative" />
-            )}
-            {r.descontoAvisoPrevio > 0 && (
-              <Row label="(-) Desconto aviso prévio não cumprido (30 dias)" value={r.descontoAvisoPrevio} type="negative" />
-            )}
-            <Row label="TOTAL LÍQUIDO (pago diretamente)" value={r.totalLiquidoDireto} className="dg-subtotal" />
-            <Row label="FGTS (depositado na conta vinculada)" value={r.totalFGTSDepositado} className="dg-section" />
-            <Row label="FGTS sobre verbas rescisórias (8%)" value={r.fgtsVerbas} type="positive" />
-            {r.percMultaFGTS > 0 ? (
-              <Row label={`Multa FGTS (${r.percMultaFGTS}%)`} value={r.multaFGTS} type="positive" />
-            ) : (
-              <Row label="Multa FGTS (não se aplica)" value={0} />
-            )}
-            <div className="dg-row dg-total">
-              <div className="dg-label">TOTAL GERAL (líquido + FGTS)</div>
-              <div className="dg-value">{fmt(r.totalGeral)}</div>
-            </div>
-          </div>
-        </div>
-      );
+      const label = TIPOS_RESCISAO.find(t => t.value === dados.tipoRescisao)?.label;
+      return React.createElement("div", {
+        className: `card ${highlight ? "card-highlight" : ""}`,
+        ref: ref
+      }, React.createElement("div", {
+        className: "detail-header"
+      }, React.createElement("h2", null, "Detalhamento — ", dados.nome, " (", label, ")"), onImprimir && React.createElement("button", {
+        className: "btn btn-primary btn-sm",
+        onClick: () => onImprimir({
+          dados,
+          resultado: r
+        })
+      }, React.createElement("svg", {
+        width: "14",
+        height: "14",
+        viewBox: "0 0 24 24",
+        fill: "none",
+        stroke: "currentColor",
+        strokeWidth: "2",
+        strokeLinecap: "round",
+        strokeLinejoin: "round",
+        style: {
+          marginRight: 4,
+          verticalAlign: "middle"
+        }
+      }, React.createElement("polyline", {
+        points: "6 9 6 2 18 2 18 9"
+      }), React.createElement("path", {
+        d: "M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"
+      }), React.createElement("rect", {
+        x: "6",
+        y: "14",
+        width: "12",
+        height: "8"
+      })), "Imprimir")), React.createElement("div", {
+        className: "detail-grid"
+      }, React.createElement(Row, {
+        label: "VERBAS RESCISÓRIAS",
+        value: r.totalVerbasBrutas,
+        className: "dg-section"
+      }), React.createElement(Row, {
+        label: `Saldo de salário (${r.diasTrabalhados} dias)`,
+        value: r.saldoSalario,
+        type: "positive"
+      }), r.avisoPrevioIndenizado > 0 && React.createElement(Row, {
+        label: `Aviso prévio indenizado (${r.diasAvisoPrevio} dias)`,
+        value: r.avisoPrevioIndenizado,
+        type: "positive"
+      }), r.decimoTerceiro > 0 && React.createElement(Row, {
+        label: `13º proporcional (${r.mesesDecimo}/12 avos)`,
+        value: r.decimoTerceiro,
+        type: "positive"
+      }), r.feriasVencidasValor > 0 && React.createElement(Row, {
+        label: `Férias vencidas + 1/3 (${r.feriasVencidasQtd} período${r.feriasVencidasQtd !== 1 ? "s" : ""})`,
+        value: r.feriasVencidasValor,
+        type: "positive"
+      }), r.feriasPropValor > 0 && React.createElement(Row, {
+        label: `Férias proporcionais + 1/3 (${r.mesesFeriasProp}/12 avos)`,
+        value: r.feriasPropValor,
+        type: "positive"
+      }), React.createElement(Row, {
+        label: "DESCONTOS",
+        value: r.totalDescontos,
+        className: "dg-section"
+      }), React.createElement(Row, {
+        label: "(-) INSS sobre saldo de salário",
+        value: r.inssSalario,
+        type: "negative"
+      }), r.inssDecimo > 0 && React.createElement(Row, {
+        label: "(-) INSS sobre 13º proporcional",
+        value: r.inssDecimo,
+        type: "negative"
+      }), r.irrfSalario > 0 && React.createElement(Row, {
+        label: "(-) IRRF sobre saldo de salário",
+        value: r.irrfSalario,
+        type: "negative"
+      }), r.irrfDecimo > 0 && React.createElement(Row, {
+        label: "(-) IRRF sobre 13º proporcional",
+        value: r.irrfDecimo,
+        type: "negative"
+      }), r.descontoAvisoPrevio > 0 && React.createElement(Row, {
+        label: "(-) Desconto aviso prévio não cumprido (30 dias)",
+        value: r.descontoAvisoPrevio,
+        type: "negative"
+      }), React.createElement(Row, {
+        label: "TOTAL LÍQUIDO (pago diretamente)",
+        value: r.totalLiquidoDireto,
+        className: "dg-subtotal"
+      }), React.createElement(Row, {
+        label: "FGTS (depositado na conta vinculada)",
+        value: r.totalFGTSDepositado,
+        className: "dg-section"
+      }), React.createElement(Row, {
+        label: "FGTS sobre verbas rescisórias (8%)",
+        value: r.fgtsVerbas,
+        type: "positive"
+      }), r.percMultaFGTS > 0 ? React.createElement(Row, {
+        label: `Multa FGTS (${r.percMultaFGTS}%)`,
+        value: r.multaFGTS,
+        type: "positive"
+      }) : React.createElement(Row, {
+        label: "Multa FGTS (não se aplica)",
+        value: 0
+      }), React.createElement("div", {
+        className: "dg-row dg-total"
+      }, React.createElement("div", {
+        className: "dg-label"
+      }, "TOTAL GERAL (líquido + FGTS)"), React.createElement("div", {
+        className: "dg-value"
+      }, fmt(r.totalGeral)))));
     });
-
+    
     // ==================== Componente: Tabela de registros ====================
-    function TabelaRegistros({ registros, onEditar, onExcluir, onExportar, onVerDetalhe, onImprimir }) {
-
-      return (
-        <div className="card">
-          <h2>Registros de Rescisão</h2>
-          {registros.length === 0 ? (
-            <div className="empty-state">Nenhum cálculo realizado ainda. Preencha o formulário acima.</div>
-          ) : (
-            <>
-              {/* Desktop: tabela */}
-              <div className="table-wrapper">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Nome</th>
-                      <th>Regime</th>
-                      <th>Contratação</th>
-                      <th>Demissão</th>
-                      <th>Tipo</th>
-                      <th>Salário</th>
-                      <th>Líquido Direto</th>
-                      <th>FGTS</th>
-                      <th>Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {registros.map((r, i) => {
-                      const regime = r.dados.regime || "clt";
-                      const isPJ = regime === "pj";
-                      return (
-                        <tr key={r.id}>
-                          <td>{i + 1}</td>
-                          <td>{r.dados.nome}</td>
-                          <td>{regime.toUpperCase()}</td>
-                          <td>{formatarData(r.dados.dataContratacao)}</td>
-                          <td>{formatarData(r.dados.dataDemissao)}</td>
-                          <td>{tipoLabel(r.dados)}</td>
-                          <td>{fmt(r.dados.salario)}</td>
-                          <td className="td-liquido">{fmt(r.resultado.totalLiquidoDireto)}</td>
-                          <td className={isPJ ? "td-fgts-na" : "td-fgts"}>
-                            {isPJ ? "—" : fmt(r.resultado.totalFGTSDepositado)}
-                          </td>
-                          <td>
-                            <div className="actions-cell">
-                              <button className="btn btn-primary btn-sm" onClick={() => onVerDetalhe(r)}>Ver</button>
-                              <button className="btn btn-primary btn-sm" onClick={() => onImprimir(r)}>Imprimir</button>
-                              <button className="btn btn-warning btn-sm" onClick={() => onEditar(r)}>Editar</button>
-                              <button className="btn btn-danger btn-sm" onClick={() => onExcluir(r.id)}>Excluir</button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              {/* Mobile: cards */}
-              <div className="mobile-records">
-                {registros.map((r, i) => {
-                  const regime = r.dados.regime || "clt";
-                  const isPJ = regime === "pj";
-                  return (
-                    <div className="record-card" key={r.id}>
-                      <div className="record-card-header">
-                        <span className="record-card-name">{i + 1}. {r.dados.nome}</span>
-                        <span className="record-card-regime">{regime.toUpperCase()}</span>
-                      </div>
-                      <div className="record-card-grid">
-                        <div className="record-card-field">
-                          <small>Contratação</small>
-                          {formatarData(r.dados.dataContratacao)}
-                        </div>
-                        <div className="record-card-field">
-                          <small>Demissão</small>
-                          {formatarData(r.dados.dataDemissao)}
-                        </div>
-                        <div className="record-card-field">
-                          <small>Tipo</small>
-                          {tipoLabel(r.dados)}
-                        </div>
-                        <div className="record-card-field">
-                          <small>Salário</small>
-                          {fmt(r.dados.salario)}
-                        </div>
-                      </div>
-                      <div className="record-card-total">
-                        <span className="rc-label">Líquido</span>
-                        <span className="rc-value td-liquido">{fmt(r.resultado.totalLiquidoDireto)}</span>
-                      </div>
-                      {!isPJ && (
-                        <div className="record-card-total record-card-fgts">
-                          <span className="rc-label">FGTS</span>
-                          <span className="rc-value td-fgts">{fmt(r.resultado.totalFGTSDepositado)}</span>
-                        </div>
-                      )}
-                      <div className="record-card-actions">
-                        <button className="btn btn-primary btn-sm" onClick={() => onVerDetalhe(r)}>Ver</button>
-                        <button className="btn btn-primary btn-sm" onClick={() => onImprimir(r)}>Imprimir</button>
-                        <button className="btn btn-warning btn-sm" onClick={() => onEditar(r)}>Editar</button>
-                        <button className="btn btn-danger btn-sm" onClick={() => onExcluir(r.id)}>Excluir</button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="form-actions form-actions-mt">
-                <button className="btn btn-accent" onClick={onExportar}>
-                  Exportar Excel
-                </button>
-              </div>
-              <div className="storage-notice">
-                <span className="notice-icon">&#9888;</span>
-                <span>
-                  <strong>Seus dados estão salvos apenas neste navegador.</strong> Limpar os dados do navegador, usar outro dispositivo ou navegar em modo anônimo fará com que os registros sejam perdidos. <strong>Exporte a planilha Excel</strong> para garantir um backup dos seus cálculos.
-                </span>
-              </div>
-            </>
-          )}
-        </div>
-      );
+    function TabelaRegistros({
+      registros,
+      onEditar,
+      onExcluir,
+      onExportar,
+      onVerDetalhe,
+      onImprimir
+    }) {
+      return React.createElement("div", {
+        className: "card"
+      }, React.createElement("h2", null, "Registros de Rescisão"), registros.length === 0 ? React.createElement("div", {
+        className: "empty-state"
+      }, "Nenhum cálculo realizado ainda. Preencha o formulário acima.") : React.createElement(React.Fragment, null, React.createElement("div", {
+        className: "table-wrapper"
+      }, React.createElement("table", null, React.createElement("thead", null, React.createElement("tr", null, React.createElement("th", null, "#"), React.createElement("th", null, "Nome"), React.createElement("th", null, "Regime"), React.createElement("th", null, "Contratação"), React.createElement("th", null, "Demissão"), React.createElement("th", null, "Tipo"), React.createElement("th", null, "Salário"), React.createElement("th", null, "Líquido Direto"), React.createElement("th", null, "FGTS"), React.createElement("th", null, "Ações"))), React.createElement("tbody", null, registros.map((r, i) => {
+        const regime = r.dados.regime || "clt";
+        const isPJ = regime === "pj";
+        return React.createElement("tr", {
+          key: r.id
+        }, React.createElement("td", null, i + 1), React.createElement("td", null, r.dados.nome), React.createElement("td", null, regime.toUpperCase()), React.createElement("td", null, formatarData(r.dados.dataContratacao)), React.createElement("td", null, formatarData(r.dados.dataDemissao)), React.createElement("td", null, tipoLabel(r.dados)), React.createElement("td", null, fmt(r.dados.salario)), React.createElement("td", {
+          className: "td-liquido"
+        }, fmt(r.resultado.totalLiquidoDireto)), React.createElement("td", {
+          className: isPJ ? "td-fgts-na" : "td-fgts"
+        }, isPJ ? "—" : fmt(r.resultado.totalFGTSDepositado)), React.createElement("td", null, React.createElement("div", {
+          className: "actions-cell"
+        }, React.createElement("button", {
+          className: "btn btn-primary btn-sm",
+          onClick: () => onVerDetalhe(r)
+        }, "Ver"), React.createElement("button", {
+          className: "btn btn-primary btn-sm",
+          onClick: () => onImprimir(r)
+        }, "Imprimir"), React.createElement("button", {
+          className: "btn btn-warning btn-sm",
+          onClick: () => onEditar(r)
+        }, "Editar"), React.createElement("button", {
+          className: "btn btn-danger btn-sm",
+          onClick: () => onExcluir(r.id)
+        }, "Excluir"))));
+      })))), React.createElement("div", {
+        className: "mobile-records"
+      }, registros.map((r, i) => {
+        const regime = r.dados.regime || "clt";
+        const isPJ = regime === "pj";
+        return React.createElement("div", {
+          className: "record-card",
+          key: r.id
+        }, React.createElement("div", {
+          className: "record-card-header"
+        }, React.createElement("span", {
+          className: "record-card-name"
+        }, i + 1, ". ", r.dados.nome), React.createElement("span", {
+          className: "record-card-regime"
+        }, regime.toUpperCase())), React.createElement("div", {
+          className: "record-card-grid"
+        }, React.createElement("div", {
+          className: "record-card-field"
+        }, React.createElement("small", null, "Contratação"), formatarData(r.dados.dataContratacao)), React.createElement("div", {
+          className: "record-card-field"
+        }, React.createElement("small", null, "Demissão"), formatarData(r.dados.dataDemissao)), React.createElement("div", {
+          className: "record-card-field"
+        }, React.createElement("small", null, "Tipo"), tipoLabel(r.dados)), React.createElement("div", {
+          className: "record-card-field"
+        }, React.createElement("small", null, "Salário"), fmt(r.dados.salario))), React.createElement("div", {
+          className: "record-card-total"
+        }, React.createElement("span", {
+          className: "rc-label"
+        }, "Líquido"), React.createElement("span", {
+          className: "rc-value td-liquido"
+        }, fmt(r.resultado.totalLiquidoDireto))), !isPJ && React.createElement("div", {
+          className: "record-card-total record-card-fgts"
+        }, React.createElement("span", {
+          className: "rc-label"
+        }, "FGTS"), React.createElement("span", {
+          className: "rc-value td-fgts"
+        }, fmt(r.resultado.totalFGTSDepositado))), React.createElement("div", {
+          className: "record-card-actions"
+        }, React.createElement("button", {
+          className: "btn btn-primary btn-sm",
+          onClick: () => onVerDetalhe(r)
+        }, "Ver"), React.createElement("button", {
+          className: "btn btn-primary btn-sm",
+          onClick: () => onImprimir(r)
+        }, "Imprimir"), React.createElement("button", {
+          className: "btn btn-warning btn-sm",
+          onClick: () => onEditar(r)
+        }, "Editar"), React.createElement("button", {
+          className: "btn btn-danger btn-sm",
+          onClick: () => onExcluir(r.id)
+        }, "Excluir")));
+      })), React.createElement("div", {
+        className: "form-actions form-actions-mt"
+      }, React.createElement("button", {
+        className: "btn btn-accent",
+        onClick: onExportar
+      }, "Exportar Excel")), React.createElement("div", {
+        className: "storage-notice"
+      }, React.createElement("span", {
+        className: "notice-icon"
+      }, "⚠"), React.createElement("span", null, React.createElement("strong", null, "Seus dados estão salvos apenas neste navegador."), " Limpar os dados do navegador, usar outro dispositivo ou navegar em modo anônimo fará com que os registros sejam perdidos. ", React.createElement("strong", null, "Exporte a planilha Excel"), " para garantir um backup dos seus cálculos."))));
     }
-
+    
     // ==================== Exportação Excel ====================
     function exportarExcel(registros) {
-      const cltRegs = registros.filter((r) => (r.dados.regime || "clt") === "clt");
-      const pjRegs = registros.filter((r) => r.dados.regime === "pj");
-
+      const cltRegs = registros.filter(r => (r.dados.regime || "clt") === "clt");
+      const pjRegs = registros.filter(r => r.dados.regime === "pj");
       const numFmt = "#,##0.00";
-
+    
       // --- Helpers ---
       function colLetter(idx) {
         let s = "";
         let n = idx;
         while (n >= 0) {
-          s = String.fromCharCode(65 + (n % 26)) + s;
+          s = String.fromCharCode(65 + n % 26) + s;
           n = Math.floor(n / 26) - 1;
         }
         return s;
       }
-
       function applyNumFmt(ws, range, colIndices) {
         for (let r = range.s.r; r <= range.e.r; r++) {
           for (const c of colIndices) {
@@ -2292,18 +2125,18 @@
           }
         }
       }
-
       function appendTotalRow(aoa, regsCount, moneyEndCol) {
         const totalArr = ["TOTAL", "", "", ""];
         const dataStart = 2;
         const dataEnd = regsCount + 1;
         for (let c = 4; c <= moneyEndCol; c++) {
           const cl = colLetter(c);
-          totalArr.push(regsCount > 0 ? { f: `SUM(${cl}${dataStart}:${cl}${dataEnd})` } : 0);
+          totalArr.push(regsCount > 0 ? {
+            f: `SUM(${cl}${dataStart}:${cl}${dataEnd})`
+          } : 0);
         }
         aoa.push(totalArr);
       }
-
       function finalizeSheet(aoa, headers, moneyColIndices) {
         const ws = XLSX.utils.aoa_to_sheet(aoa);
         applyNumFmt(ws, XLSX.utils.decode_range(ws["!ref"]), moneyColIndices);
@@ -2312,102 +2145,59 @@
         }));
         return ws;
       }
-
+    
       // --- Build CLT sheet ---
       function buildCLTSheet() {
-        const headers = [
-          "Nome", "Contratação", "Demissão", "Tipo", "Salário Bruto",
-          "Saldo Salário", "Aviso Prévio Ind.", "13º Proporcional",
-          "Férias Vencidas + 1/3", "Férias Proporcionais + 1/3",
-          "Total Verbas Brutas",
-          "INSS Salário", "INSS 13º", "IRRF Salário", "IRRF 13º", "Desc. Aviso Prévio",
-          "Total Descontos", "Total Líquido Direto",
-          "FGTS Verbas", "Multa FGTS", "Total FGTS Depositado", "Total Geral"
-        ];
+        const headers = ["Nome", "Contratação", "Demissão", "Tipo", "Salário Bruto", "Saldo Salário", "Aviso Prévio Ind.", "13º Proporcional", "Férias Vencidas + 1/3", "Férias Proporcionais + 1/3", "Total Verbas Brutas", "INSS Salário", "INSS 13º", "IRRF Salário", "IRRF 13º", "Desc. Aviso Prévio", "Total Descontos", "Total Líquido Direto", "FGTS Verbas", "Multa FGTS", "Total FGTS Depositado", "Total Geral"];
         // Col indices: A=0..V=21
         // Formula cols: K=10(SUM F:J), Q=16(SUM L:P), R=17(K-Q), U=20(S+T), V=21(R+U)
-        const moneyColIndices = [4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21];
+        const moneyColIndices = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
         const aoa = [headers];
-
         cltRegs.forEach((r, i) => {
           const res = r.resultado;
           const row = i + 2; // Excel row (1-indexed, header is row 1)
-          aoa.push([
-            r.dados.nome,
-            formatarData(r.dados.dataContratacao),
-            formatarData(r.dados.dataDemissao),
-            tipoLabel(r.dados),
-            r.dados.salario || 0,
-            res.saldoSalario || 0,
-            res.avisoPrevioIndenizado || 0,
-            res.decimoTerceiro || 0,
-            res.feriasVencidasValor || 0,
-            res.feriasPropValor || 0,
-            { f: `SUM(F${row}:J${row})` },
-            res.inssSalario || 0,
-            res.inssDecimo || 0,
-            res.irrfSalario || 0,
-            res.irrfDecimo || 0,
-            res.descontoAvisoPrevio || 0,
-            { f: `SUM(L${row}:P${row})` },
-            { f: `K${row}-Q${row}` },
-            res.fgtsVerbas || 0,
-            res.multaFGTS || 0,
-            { f: `S${row}+T${row}` },
-            { f: `R${row}+U${row}` },
-          ]);
+          aoa.push([r.dados.nome, formatarData(r.dados.dataContratacao), formatarData(r.dados.dataDemissao), tipoLabel(r.dados), r.dados.salario || 0, res.saldoSalario || 0, res.avisoPrevioIndenizado || 0, res.decimoTerceiro || 0, res.feriasVencidasValor || 0, res.feriasPropValor || 0, {
+            f: `SUM(F${row}:J${row})`
+          }, res.inssSalario || 0, res.inssDecimo || 0, res.irrfSalario || 0, res.irrfDecimo || 0, res.descontoAvisoPrevio || 0, {
+            f: `SUM(L${row}:P${row})`
+          }, {
+            f: `K${row}-Q${row}`
+          }, res.fgtsVerbas || 0, res.multaFGTS || 0, {
+            f: `S${row}+T${row}`
+          }, {
+            f: `R${row}+U${row}`
+          }]);
         });
-
         appendTotalRow(aoa, cltRegs.length, 21);
         return finalizeSheet(aoa, headers, moneyColIndices);
       }
-
+    
       // --- Build PJ sheet ---
       function buildPJSheet() {
-        const headers = [
-          "Prestador", "Data Início", "Data Encerramento", "Tipo", "Valor Mensal",
-          "Saldo Pagamento", "Multa Contratual (Crédito)", "Inden. Aviso Prévio",
-          "13º Proporcional", "Férias Proporcionais + 1/3",
-          "Total Créditos",
-          "Multa Contratual (Desconto)", "Desc. Aviso Prévio",
-          "Total Descontos", "Total Líquido"
-        ];
+        const headers = ["Prestador", "Data Início", "Data Encerramento", "Tipo", "Valor Mensal", "Saldo Pagamento", "Multa Contratual (Crédito)", "Inden. Aviso Prévio", "13º Proporcional", "Férias Proporcionais + 1/3", "Total Créditos", "Multa Contratual (Desconto)", "Desc. Aviso Prévio", "Total Descontos", "Total Líquido"];
         // Col indices: A=0..O=14
         // F=Saldo, G=Multa Créd, H=Aviso Créd, I=13º, J=Férias
         // K=Total Créditos(SUM F:J), L=Multa Desc, M=Desc Aviso
         // N=Total Descontos(SUM L:M), O=Líquido(K-N)
-        const moneyColIndices = [4,5,6,7,8,9,10,11,12,13,14];
+        const moneyColIndices = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
         const aoa = [headers];
-
         pjRegs.forEach((r, i) => {
           const res = r.resultado;
           const row = i + 2;
-          aoa.push([
-            r.dados.nome,
-            formatarData(r.dados.dataContratacao),
-            formatarData(r.dados.dataDemissao),
-            tipoLabel(r.dados),
-            r.dados.salario || 0,
-            res.saldoPagamento || 0,
-            res.multaContratualCredito || 0,
-            res.avisoPrevioCredito || 0,
-            res.decimoTerceiro || 0,
-            res.feriasPropValor || 0,
-            { f: `SUM(F${row}:J${row})` },
-            res.multaContratualDesconto || 0,
-            res.avisoPrevioDesconto || 0,
-            { f: `SUM(L${row}:M${row})` },
-            { f: `K${row}-N${row}` },
-          ]);
+          aoa.push([r.dados.nome, formatarData(r.dados.dataContratacao), formatarData(r.dados.dataDemissao), tipoLabel(r.dados), r.dados.salario || 0, res.saldoPagamento || 0, res.multaContratualCredito || 0, res.avisoPrevioCredito || 0, res.decimoTerceiro || 0, res.feriasPropValor || 0, {
+            f: `SUM(F${row}:J${row})`
+          }, res.multaContratualDesconto || 0, res.avisoPrevioDesconto || 0, {
+            f: `SUM(L${row}:M${row})`
+          }, {
+            f: `K${row}-N${row}`
+          }]);
         });
-
         appendTotalRow(aoa, pjRegs.length, 14);
         return finalizeSheet(aoa, headers, moneyColIndices);
       }
-
+    
       // --- Build workbook ---
       const wb = XLSX.utils.book_new();
-
       if (cltRegs.length > 0 && pjRegs.length > 0) {
         XLSX.utils.book_append_sheet(wb, buildCLTSheet(), "Rescisões CLT");
         XLSX.utils.book_append_sheet(wb, buildPJSheet(), "Encerramentos PJ");
@@ -2417,90 +2207,66 @@
         // CLT only, or no records at all (empty CLT sheet)
         XLSX.utils.book_append_sheet(wb, buildCLTSheet(), "Rescisões CLT");
       }
-
       XLSX.writeFile(wb, `rescisoes_${new Date().toISOString().slice(0, 10)}.xlsx`);
     }
-
+    
     // ==================== Geração de Recibo (Impressão) ====================
     function gerarRecibo(registro) {
-      const { dados, resultado: r } = registro;
+      const {
+        dados,
+        resultado: r
+      } = registro;
       const regime = dados.regime || "clt";
       const isPJ = regime === "pj";
-
-      const fmtR = (v) => fmt(v || 0);
+      const fmtR = v => fmt(v || 0);
       const fmtData = formatarData;
       const esc = escapeHtml;
-
       const css = `
-        body { font-family: Arial, sans-serif; color: #222; max-width: 700px; margin: 0 auto; padding: 24px; }
-        h1 { font-size: 16px; text-align: center; text-transform: uppercase; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 16px; }
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; font-size: 13px; margin: 16px 0; }
-        .info-grid span { padding: 2px 0; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0; }
-        td, th { padding: 6px 10px; border: 1px solid #ccc; }
-        th { text-align: left; }
-        .section td { background: #f0f0f0; font-weight: 700; }
-        .total td { background: #333; color: #fff; font-weight: 700; }
-        .subtotal td { background: #e8e8e8; font-weight: 700; }
-        .val { text-align: right; white-space: nowrap; }
-        .signatures { display: flex; justify-content: space-around; margin-top: 60px; text-align: center; font-size: 13px; }
-        .sig-line { border-top: 1px solid #333; padding-top: 6px; min-width: 200px; }
-        .date-line { margin-top: 40px; font-size: 13px; }
-        .btn-close { display: block; margin: 0 auto 20px; padding: 8px 24px; cursor: pointer; font-size: 14px; }
-        @media print { .btn-close { display: none; } }
-      `;
-
+            body { font-family: Arial, sans-serif; color: #222; max-width: 700px; margin: 0 auto; padding: 24px; }
+            h1 { font-size: 16px; text-align: center; text-transform: uppercase; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 16px; }
+            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; font-size: 13px; margin: 16px 0; }
+            .info-grid span { padding: 2px 0; }
+            table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0; }
+            td, th { padding: 6px 10px; border: 1px solid #ccc; }
+            th { text-align: left; }
+            .section td { background: #f0f0f0; font-weight: 700; }
+            .total td { background: #333; color: #fff; font-weight: 700; }
+            .subtotal td { background: #e8e8e8; font-weight: 700; }
+            .val { text-align: right; white-space: nowrap; }
+            .signatures { display: flex; justify-content: space-around; margin-top: 60px; text-align: center; font-size: 13px; }
+            .sig-line { border-top: 1px solid #333; padding-top: 6px; min-width: 200px; }
+            .date-line { margin-top: 40px; font-size: 13px; }
+            .btn-close { display: block; margin: 0 auto 20px; padding: 8px 24px; cursor: pointer; font-size: 14px; }
+            @media print { .btn-close { display: none; } }
+          `;
       let rows = "";
       const row = (desc, val, cls) => {
         if (cls) return '<tr class="' + cls + '"><td colspan="2">' + desc + '</td></tr>';
         return "<tr><td>" + desc + '</td><td class="val">' + fmtR(val) + "</td></tr>";
       };
-
       let titulo, info, assinaturas;
-
       if (isPJ) {
-        const label = TIPOS_RESCISAO_PJ.find((t) => t.value === dados.tipoRescisaoPJ)?.label || dados.tipoRescisaoPJ;
-
+        const label = TIPOS_RESCISAO_PJ.find(t => t.value === dados.tipoRescisaoPJ)?.label || dados.tipoRescisaoPJ;
         titulo = "Termo de Encerramento de Contrato de Prestação de Serviço";
-        info = '<div class="info-grid">'
-          + "<span><strong>Prestador:</strong> " + esc(dados.nome) + "</span><span></span>"
-          + "<span><strong>Data de início:</strong> " + fmtData(dados.dataContratacao) + "</span>"
-          + "<span><strong>Data de encerramento:</strong> " + fmtData(dados.dataDemissao) + "</span>"
-          + "<span><strong>Valor mensal:</strong> " + fmtR(dados.salario) + "</span>"
-          + "<span><strong>Tipo:</strong> " + esc(label) + "</span>"
-          + "</div>";
-
+        info = '<div class="info-grid">' + "<span><strong>Prestador:</strong> " + esc(dados.nome) + "</span><span></span>" + "<span><strong>Data de início:</strong> " + fmtData(dados.dataContratacao) + "</span>" + "<span><strong>Data de encerramento:</strong> " + fmtData(dados.dataDemissao) + "</span>" + "<span><strong>Valor mensal:</strong> " + fmtR(dados.salario) + "</span>" + "<span><strong>Tipo:</strong> " + esc(label) + "</span>" + "</div>";
         rows += row("CRÉDITOS", null, "section");
         rows += row("Saldo de pagamento (" + r.diasTrabalhados + " dias)", r.saldoPagamento);
         if (r.multaContratualCredito > 0) rows += row("Multa contratual (" + r.multaContratualPerc + "%)", r.multaContratualCredito);
         if (r.avisoPrevioCredito > 0) rows += row("Indenização aviso prévio (" + r.diasAvisoPrevioPJ + " dias)", r.avisoPrevioCredito);
         if (r.decimoTerceiro > 0) rows += row("13º proporcional (" + r.mesesDecimo + "/12 avos)", r.decimoTerceiro);
         if (r.feriasPropValor > 0) rows += row("Férias proporcionais + 1/3 (" + r.mesesFeriasProp + "/12 avos)", r.feriasPropValor);
-
         rows += row("DESCONTOS", null, "section");
         if (r.multaContratualDesconto > 0) rows += row("Multa contratual devida (" + r.multaContratualPerc + "%)", r.multaContratualDesconto);
         if (r.avisoPrevioDesconto > 0) rows += row("Desc. aviso prévio não cumprido (" + r.diasAvisoPrevioPJ + " dias)", r.avisoPrevioDesconto);
         if (r.totalDescontos === 0) rows += row("Nenhum desconto", 0);
-
         rows += row("TOTAL LÍQUIDO", null, "total");
         rows += "<tr class=\"total\"><td>Total líquido</td><td class=\"val\">" + fmtR(r.totalLiquidoDireto) + "</td></tr>";
-
-        assinaturas = '<div class="signatures">'
-          + '<div><div class="sig-line">Contratante</div></div>'
-          + '<div><div class="sig-line">Prestador</div></div>'
-          + "</div>";
+        assinaturas = '<div class="signatures">' + '<div><div class="sig-line">Contratante</div></div>' + '<div><div class="sig-line">Prestador</div></div>' + "</div>";
       } else {
-        const label = TIPOS_RESCISAO.find((t) => t.value === dados.tipoRescisao)?.label || dados.tipoRescisao;
-
+        const label = TIPOS_RESCISAO.find(t => t.value === dados.tipoRescisao)?.label || dados.tipoRescisao;
         titulo = "Recibo de Rescisão do Contrato de Trabalho";
-        info = '<div class="info-grid">'
-          + "<span><strong>Funcionário:</strong> " + esc(dados.nome) + "</span><span></span>"
-          + "<span><strong>Data de contratação:</strong> " + fmtData(dados.dataContratacao) + "</span>"
-          + "<span><strong>Data de demissão:</strong> " + fmtData(dados.dataDemissao) + "</span>"
-          + "<span><strong>Salário bruto:</strong> " + fmtR(dados.salario) + "</span>"
-          + "<span><strong>Tipo:</strong> " + esc(label) + "</span>"
-          + "</div>";
-
+        info = '<div class="info-grid">' + "<span><strong>Funcionário:</strong> " + esc(dados.nome) + "</span><span></span>" + "<span><strong>Data de contratação:</strong> " + fmtData(dados.dataContratacao) + "</span>" + "<span><strong>Data de demissão:</strong> " + fmtData(dados.dataDemissao) + "</span>" + "<span><strong>Salário bruto:</strong> " + fmtR(dados.salario) + "</span>" + "<span><strong>Tipo:</strong> " + esc(label) + "</span>" + "</div>";
+    
         // Verbas rescisórias
         rows += row("VERBAS RESCISÓRIAS", null, "section");
         rows += row("Saldo de salário (" + r.diasTrabalhados + " dias)", r.saldoSalario);
@@ -2508,7 +2274,7 @@
         if (r.decimoTerceiro > 0) rows += row("13º proporcional (" + r.mesesDecimo + "/12 avos)", r.decimoTerceiro);
         if (r.feriasVencidasValor > 0) rows += row("Férias vencidas + 1/3 (" + r.feriasVencidasQtd + " período" + (r.feriasVencidasQtd !== 1 ? "s" : "") + ")", r.feriasVencidasValor);
         if (r.feriasPropValor > 0) rows += row("Férias proporcionais + 1/3 (" + r.mesesFeriasProp + "/12 avos)", r.feriasPropValor);
-
+    
         // Descontos
         rows += row("DESCONTOS", null, "section");
         rows += row("INSS sobre saldo de salário", r.inssSalario);
@@ -2516,11 +2282,11 @@
         if (r.irrfSalario > 0) rows += row("IRRF sobre saldo de salário", r.irrfSalario);
         if (r.irrfDecimo > 0) rows += row("IRRF sobre 13º proporcional", r.irrfDecimo);
         if (r.descontoAvisoPrevio > 0) rows += row("Desc. aviso prévio não cumprido", r.descontoAvisoPrevio);
-
+    
         // Subtotal líquido
         rows += row("TOTAL LÍQUIDO (pago diretamente)", null, "subtotal");
         rows += "<tr class=\"subtotal\"><td>Total líquido direto</td><td class=\"val\">" + fmtR(r.totalLiquidoDireto) + "</td></tr>";
-
+    
         // FGTS
         rows += row("FGTS (depositado na conta vinculada)", null, "section");
         rows += row("FGTS sobre verbas rescisórias (8%)", r.fgtsVerbas);
@@ -2530,309 +2296,229 @@
           rows += row("Multa FGTS (não se aplica)", 0);
         }
         rows += "<tr class=\"subtotal\"><td>Total FGTS depositado</td><td class=\"val\">" + fmtR(r.totalFGTSDepositado) + "</td></tr>";
-
+    
         // Total geral
         rows += row("TOTAL GERAL", null, "total");
         rows += "<tr class=\"total\"><td>Total geral (líquido + FGTS)</td><td class=\"val\">" + fmtR(r.totalGeral) + "</td></tr>";
-
-        assinaturas = '<div class="signatures">'
-          + '<div><div class="sig-line">Empregador</div></div>'
-          + '<div><div class="sig-line">Funcionário</div></div>'
-          + "</div>";
+        assinaturas = '<div class="signatures">' + '<div><div class="sig-line">Empregador</div></div>' + '<div><div class="sig-line">Funcionário</div></div>' + "</div>";
       }
-
-      const html = "<!DOCTYPE html><html lang=\"pt-BR\"><head><meta charset=\"UTF-8\"><title>" + titulo + "</title>"
-        + "<style>" + css + "</style></head>"
-        + "<body onload=\"window.print()\">"
-        + "<button class=\"btn-close\" onclick=\"window.close()\">Fechar</button>"
-        + "<h1>" + titulo + "</h1>"
-        + info
-        + "<table><thead><tr><th>Descrição</th><th class=\"val\">Valor</th></tr></thead><tbody>"
-        + rows
-        + "</tbody></table>"
-        + '<div class="date-line">Data: ___/___/______</div>'
-        + assinaturas
-        + "</body></html>";
-
+      const html = "<!DOCTYPE html><html lang=\"pt-BR\"><head><meta charset=\"UTF-8\"><title>" + titulo + "</title>" + "<style>" + css + "</style></head>" + "<body onload=\"window.print()\">" + "<button class=\"btn-close\" onclick=\"window.close()\">Fechar</button>" + "<h1>" + titulo + "</h1>" + info + "<table><thead><tr><th>Descrição</th><th class=\"val\">Valor</th></tr></thead><tbody>" + rows + "</tbody></table>" + '<div class="date-line">Data: ___/___/______</div>' + assinaturas + "</body></html>";
       const popup = window.open("", "_blank", "width=800,height=900");
       if (popup) {
         popup.document.write(html);
         popup.document.close();
       }
     }
-
+    
     // ==================== Painel Informativo ====================
     function InfoPanel() {
       const [tab, setTab] = useState("pj");
-      return (
-        <React.Fragment>
-          <div className="info-aviso">
-            Os descontos do INSS e IRRF seguem as <strong>tabelas de 2026</strong> (janeiro a dezembro). Todo começo de ano o governo publica novos valores. Se estiver usando em <strong>2027 ou depois</strong>, os cálculos podem estar desatualizados.
-          </div>
-
-          <div className="info-tabs" role="tablist" aria-label="Regime de cálculo">
-            <button type="button" role="tab" id="info-tab-pj" aria-selected={tab === "pj"} aria-controls="info-panel-pj" className={tab === "pj" ? "active" : ""} onClick={() => setTab("pj")}>PJ</button>
-            <button type="button" role="tab" id="info-tab-clt" aria-selected={tab === "clt"} aria-controls="info-panel-clt" className={tab === "clt" ? "active" : ""} onClick={() => setTab("clt")}>CLT</button>
-          </div>
-
-          <div role="tabpanel" id={`info-panel-${tab}`} aria-labelledby={`info-tab-${tab}`}>
-            {tab === "clt" ? <InfoCLT /> : <InfoPJ />}
-          </div>
-        </React.Fragment>
-      );
+      return React.createElement(React.Fragment, null, React.createElement("div", {
+        className: "info-aviso"
+      }, "Os descontos do INSS e IRRF seguem as ", React.createElement("strong", null, "tabelas de 2026"), " (janeiro a dezembro). Todo começo de ano o governo publica novos valores. Se estiver usando em ", React.createElement("strong", null, "2027 ou depois"), ", os cálculos podem estar desatualizados."), React.createElement("div", {
+        className: "info-tabs",
+        role: "tablist",
+        "aria-label": "Regime de cálculo"
+      }, React.createElement("button", {
+        type: "button",
+        role: "tab",
+        id: "info-tab-pj",
+        "aria-selected": tab === "pj",
+        "aria-controls": "info-panel-pj",
+        className: tab === "pj" ? "active" : "",
+        onClick: () => setTab("pj")
+      }, "PJ"), React.createElement("button", {
+        type: "button",
+        role: "tab",
+        id: "info-tab-clt",
+        "aria-selected": tab === "clt",
+        "aria-controls": "info-panel-clt",
+        className: tab === "clt" ? "active" : "",
+        onClick: () => setTab("clt")
+      }, "CLT")), React.createElement("div", {
+        role: "tabpanel",
+        id: `info-panel-${tab}`,
+        "aria-labelledby": `info-tab-${tab}`
+      }, tab === "clt" ? React.createElement(InfoCLT, null) : React.createElement(InfoPJ, null)));
     }
-
     function InfoCLT() {
-      return (
-        <React.Fragment>
-          <div className="info-section">
-            <h4>Saldo de salário <span className="info-badge info-badge-green">Crédito</span></h4>
-            <p>É o pagamento pelos dias que o funcionário trabalhou no mês da demissão.</p>
-            <div className="info-formula">Salário ÷ 30 × dias trabalhados no mês</div>
-            <p className="info-note">Exemplo: salário de R$ 3.000 e demissão no dia 15 → R$ 3.000 ÷ 30 × 15 = R$ 1.500</p>
-          </div>
-
-          <div className="info-section">
-            <h4>13º proporcional <span className="info-badge info-badge-green">Crédito</span></h4>
-            <p>O funcionário tem direito a 1/12 do salário por cada mês trabalhado no ano (meses com 15 dias ou mais contam como mês cheio).</p>
-            <div className="info-formula">Salário ÷ 12 × meses trabalhados no ano</div>
-            <p className="info-note">Se o aviso prévio for indenizado, os dias do aviso contam para o cálculo do 13º. Não é pago em justa causa.</p>
-          </div>
-
-          <div className="info-section">
-            <h4>Férias proporcionais + 1/3 <span className="info-badge info-badge-green">Crédito</span></h4>
-            <p>São as férias que o funcionário ainda não completou um período inteiro. Cada mês (com 15+ dias) desde o último aniversário de contrato gera 1/12 de férias. Sobre esse valor, soma-se 1/3 constitucional.</p>
-            <div className="info-formula">(Salário ÷ 12 × meses) + 1/3 do resultado</div>
-            <p className="info-note">Não é pago em justa causa.</p>
-          </div>
-
-          <div className="info-section">
-            <h4>Férias vencidas + 1/3 <span className="info-badge info-badge-green">Crédito</span></h4>
-            <p>Se o funcionário tinha períodos de férias que deveria ter tirado mas não tirou, a empresa deve pagar cada período como um salário completo + 1/3.</p>
-            <div className="info-formula">Períodos vencidos × (Salário + Salário ÷ 3)</div>
-            <p className="info-note">Devidas em qualquer tipo de rescisão, inclusive justa causa.</p>
-          </div>
-
-          <div className="info-section">
-            <h4>Aviso prévio <span className="info-badge info-badge-blue">Variável</span></h4>
-            <p>Período de antecedência que uma parte deve dar à outra antes de encerrar o contrato. O mínimo é 30 dias, e a cada ano de trabalho somam-se 3 dias (até o máximo de 90 dias).</p>
-            <div className="info-formula">Dias de aviso = 30 + (anos de serviço × 3), máximo 90{"\n"}Valor = Salário ÷ 30 × dias de aviso</div>
-            <div className="info-tipo-grid">
-              <div className="info-tipo-card">
-                <strong>Sem justa causa</strong>
-                Se não foi trabalhado, a empresa paga o valor inteiro ao funcionário.
-              </div>
-              <div className="info-tipo-card">
-                <strong>Pedido de demissão</strong>
-                Se não foi trabalhado, o funcionário tem desconto de 30 dias de salário.
-              </div>
-              <div className="info-tipo-card">
-                <strong>Acordo mútuo</strong>
-                Se não foi trabalhado, a empresa paga 50% do valor do aviso.
-              </div>
-              <div className="info-tipo-card">
-                <strong>Justa causa</strong>
-                Não há aviso prévio.
-              </div>
-            </div>
-          </div>
-
-          <div className="info-section">
-            <h4>INSS <span className="info-badge info-badge-red">Desconto</span></h4>
-            <p>Desconto obrigatório para a previdência social. O cálculo é <strong>progressivo</strong>: cada faixa do salário tem uma alíquota diferente (igual ao Imposto de Renda).</p>
-            <table className="info-table">
-              <thead>
-                <tr><th>Faixa salarial</th><th>Alíquota</th></tr>
-              </thead>
-              <tbody>
-                {FAIXAS_INSS.map((f, i) => {
-                  const prev = i > 0 ? FAIXAS_INSS[i - 1].teto : 0;
-                  const label = i === 0
-                    ? `Até ${fmt(f.teto)}`
-                    : `${fmt(prev + 0.01)} a ${fmt(f.teto)}`;
-                  return <tr key={i}><td>{label}</td><td>{(f.aliq * 100).toFixed(1).replace(".", ",")}%</td></tr>;
-                })}
-              </tbody>
-            </table>
-            <p className="info-note">Tabela vigente em 2026. O INSS incide sobre o saldo de salário e sobre o 13º separadamente. Férias e aviso prévio indenizado não têm desconto de INSS.</p>
-          </div>
-
-          <div className="info-section">
-            <h4>IRRF (Imposto de Renda) <span className="info-badge info-badge-red">Desconto</span></h4>
-            <p>Imposto de renda retido na fonte. É calculado sobre o saldo de salário e sobre o 13º <strong>separadamente</strong>, depois de descontar o INSS de cada um. Férias e aviso prévio indenizado são <strong>isentos</strong>.</p>
-            <div className="info-formula">Base = Valor da verba − INSS sobre essa verba{"\n"}IRRF = Base × alíquota da faixa − parcela a deduzir − redutor 2026</div>
-            <table className="info-table">
-              <thead>
-                <tr><th>Base de cálculo</th><th>Alíquota</th><th>Dedução</th></tr>
-              </thead>
-              <tbody>
-                {FAIXAS_IRRF.map((f, i) => {
-                  const prev = i > 0 ? FAIXAS_IRRF[i - 1].teto : 0;
-                  const label = f.teto === Infinity
-                    ? `Acima de ${fmt(prev)}`
-                    : i === 0
-                      ? `Até ${fmt(f.teto)}`
-                      : `${fmt(prev + 0.01)} a ${fmt(f.teto)}`;
-                  return <tr key={i}><td>{label}</td><td>{(f.aliq * 100).toFixed(1).replace(".", ",")}%</td><td>{fmt(f.deducao)}</td></tr>;
-                })}
-              </tbody>
-            </table>
-            <p className="info-note">Em 2026, quem ganha até R$ 5.000 é isento (redutor cobre o imposto). Entre R$ 5.000 e R$ 7.350 há redução parcial. Acima de R$ 7.350 a tabela se aplica integralmente. Não considera dependentes ou outras deduções.</p>
-          </div>
-
-          <div className="info-section">
-            <h4>FGTS sobre verbas rescisórias <span className="info-badge info-badge-blue">Depositado</span></h4>
-            <p>A empresa deve depositar 8% sobre o saldo de salário, 13º proporcional e aviso prévio indenizado na conta do FGTS do funcionário.</p>
-            <div className="info-formula">8% × (Saldo de salário + 13º + Aviso prévio indenizado)</div>
-            <p className="info-note">Esse valor vai para a conta do FGTS, não é pago diretamente ao funcionário junto com as verbas.</p>
-          </div>
-
-          <div className="info-section">
-            <h4>Multa do FGTS <span className="info-badge info-badge-blue">Depositado</span></h4>
-            <p>É uma multa que a empresa paga sobre o total acumulado de FGTS do funcionário (saldo anterior + depósito das verbas rescisórias).</p>
-            <div className="info-formula">Total do FGTS acumulado × percentual da multa</div>
-            <div className="info-tipo-grid">
-              <div className="info-tipo-card">
-                <strong>Sem justa causa</strong>
-                Multa de 40% sobre o total do FGTS.
-              </div>
-              <div className="info-tipo-card">
-                <strong>Acordo mútuo</strong>
-                Multa de 20% sobre o total do FGTS.
-              </div>
-              <div className="info-tipo-card">
-                <strong>Pedido de demissão</strong>
-                Sem multa (0%).
-              </div>
-              <div className="info-tipo-card">
-                <strong>Justa causa</strong>
-                Sem multa (0%).
-              </div>
-            </div>
-          </div>
-
-          <div className="info-section">
-            <h4>Resumo por tipo de rescisão</h4>
-            <div className="info-table-wrap"><table className="info-table">
-              <thead>
-                <tr>
-                  <th>Verba</th>
-                  <th>Sem justa causa</th>
-                  <th>Justa causa</th>
-                  <th>Pedido demissão</th>
-                  <th>Acordo mútuo</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td>Saldo de salário</td><td>Sim</td><td>Sim</td><td>Sim</td><td>Sim</td></tr>
-                <tr><td>13º proporcional</td><td>Sim</td><td>Não</td><td>Sim</td><td>Sim</td></tr>
-                <tr><td>Férias proporcionais</td><td>Sim</td><td>Não</td><td>Sim</td><td>Sim</td></tr>
-                <tr><td>Férias vencidas</td><td>Sim</td><td>Sim</td><td>Sim</td><td>Sim</td></tr>
-                <tr><td>Aviso prévio</td><td>Integral</td><td>Não</td><td>Desconto</td><td>50%</td></tr>
-                <tr><td>INSS</td><td>Sim</td><td>Sim</td><td>Sim</td><td>Sim</td></tr>
-                <tr><td>IRRF</td><td>Sim</td><td>Sim</td><td>Sim</td><td>Sim</td></tr>
-                <tr><td>Multa FGTS</td><td>40%</td><td>Não</td><td>Não</td><td>20%</td></tr>
-              </tbody>
-            </table></div>
-          </div>
-        </React.Fragment>
-      );
+      return React.createElement(React.Fragment, null, React.createElement("div", {
+        className: "info-section"
+      }, React.createElement("h4", null, "Saldo de salário ", React.createElement("span", {
+        className: "info-badge info-badge-green"
+      }, "Crédito")), React.createElement("p", null, "É o pagamento pelos dias que o funcionário trabalhou no mês da demissão."), React.createElement("div", {
+        className: "info-formula"
+      }, "Salário ÷ 30 × dias trabalhados no mês"), React.createElement("p", {
+        className: "info-note"
+      }, "Exemplo: salário de R$ 3.000 e demissão no dia 15 → R$ 3.000 ÷ 30 × 15 = R$ 1.500")), React.createElement("div", {
+        className: "info-section"
+      }, React.createElement("h4", null, "13º proporcional ", React.createElement("span", {
+        className: "info-badge info-badge-green"
+      }, "Crédito")), React.createElement("p", null, "O funcionário tem direito a 1/12 do salário por cada mês trabalhado no ano (meses com 15 dias ou mais contam como mês cheio)."), React.createElement("div", {
+        className: "info-formula"
+      }, "Salário ÷ 12 × meses trabalhados no ano"), React.createElement("p", {
+        className: "info-note"
+      }, "Se o aviso prévio for indenizado, os dias do aviso contam para o cálculo do 13º. Não é pago em justa causa.")), React.createElement("div", {
+        className: "info-section"
+      }, React.createElement("h4", null, "Férias proporcionais + 1/3 ", React.createElement("span", {
+        className: "info-badge info-badge-green"
+      }, "Crédito")), React.createElement("p", null, "São as férias que o funcionário ainda não completou um período inteiro. Cada mês (com 15+ dias) desde o último aniversário de contrato gera 1/12 de férias. Sobre esse valor, soma-se 1/3 constitucional."), React.createElement("div", {
+        className: "info-formula"
+      }, "(Salário ÷ 12 × meses) + 1/3 do resultado"), React.createElement("p", {
+        className: "info-note"
+      }, "Não é pago em justa causa.")), React.createElement("div", {
+        className: "info-section"
+      }, React.createElement("h4", null, "Férias vencidas + 1/3 ", React.createElement("span", {
+        className: "info-badge info-badge-green"
+      }, "Crédito")), React.createElement("p", null, "Se o funcionário tinha períodos de férias que deveria ter tirado mas não tirou, a empresa deve pagar cada período como um salário completo + 1/3."), React.createElement("div", {
+        className: "info-formula"
+      }, "Períodos vencidos × (Salário + Salário ÷ 3)"), React.createElement("p", {
+        className: "info-note"
+      }, "Devidas em qualquer tipo de rescisão, inclusive justa causa.")), React.createElement("div", {
+        className: "info-section"
+      }, React.createElement("h4", null, "Aviso prévio ", React.createElement("span", {
+        className: "info-badge info-badge-blue"
+      }, "Variável")), React.createElement("p", null, "Período de antecedência que uma parte deve dar à outra antes de encerrar o contrato. O mínimo é 30 dias, e a cada ano de trabalho somam-se 3 dias (até o máximo de 90 dias)."), React.createElement("div", {
+        className: "info-formula"
+      }, "Dias de aviso = 30 + (anos de serviço × 3), máximo 90", "\n", "Valor = Salário ÷ 30 × dias de aviso"), React.createElement("div", {
+        className: "info-tipo-grid"
+      }, React.createElement("div", {
+        className: "info-tipo-card"
+      }, React.createElement("strong", null, "Sem justa causa"), "Se não foi trabalhado, a empresa paga o valor inteiro ao funcionário."), React.createElement("div", {
+        className: "info-tipo-card"
+      }, React.createElement("strong", null, "Pedido de demissão"), "Se não foi trabalhado, o funcionário tem desconto de 30 dias de salário."), React.createElement("div", {
+        className: "info-tipo-card"
+      }, React.createElement("strong", null, "Acordo mútuo"), "Se não foi trabalhado, a empresa paga 50% do valor do aviso."), React.createElement("div", {
+        className: "info-tipo-card"
+      }, React.createElement("strong", null, "Justa causa"), "Não há aviso prévio."))), React.createElement("div", {
+        className: "info-section"
+      }, React.createElement("h4", null, "INSS ", React.createElement("span", {
+        className: "info-badge info-badge-red"
+      }, "Desconto")), React.createElement("p", null, "Desconto obrigatório para a previdência social. O cálculo é ", React.createElement("strong", null, "progressivo"), ": cada faixa do salário tem uma alíquota diferente (igual ao Imposto de Renda)."), React.createElement("table", {
+        className: "info-table"
+      }, React.createElement("thead", null, React.createElement("tr", null, React.createElement("th", null, "Faixa salarial"), React.createElement("th", null, "Alíquota"))), React.createElement("tbody", null, FAIXAS_INSS.map((f, i) => {
+        const prev = i > 0 ? FAIXAS_INSS[i - 1].teto : 0;
+        const label = i === 0 ? `Até ${fmt(f.teto)}` : `${fmt(prev + 0.01)} a ${fmt(f.teto)}`;
+        return React.createElement("tr", {
+          key: i
+        }, React.createElement("td", null, label), React.createElement("td", null, (f.aliq * 100).toFixed(1).replace(".", ","), "%"));
+      }))), React.createElement("p", {
+        className: "info-note"
+      }, "Tabela vigente em 2026. O INSS incide sobre o saldo de salário e sobre o 13º separadamente. Férias e aviso prévio indenizado não têm desconto de INSS.")), React.createElement("div", {
+        className: "info-section"
+      }, React.createElement("h4", null, "IRRF (Imposto de Renda) ", React.createElement("span", {
+        className: "info-badge info-badge-red"
+      }, "Desconto")), React.createElement("p", null, "Imposto de renda retido na fonte. É calculado sobre o saldo de salário e sobre o 13º ", React.createElement("strong", null, "separadamente"), ", depois de descontar o INSS de cada um. Férias e aviso prévio indenizado são ", React.createElement("strong", null, "isentos"), "."), React.createElement("div", {
+        className: "info-formula"
+      }, "Base = Valor da verba − INSS sobre essa verba", "\n", "IRRF = Base × alíquota da faixa − parcela a deduzir − redutor 2026"), React.createElement("table", {
+        className: "info-table"
+      }, React.createElement("thead", null, React.createElement("tr", null, React.createElement("th", null, "Base de cálculo"), React.createElement("th", null, "Alíquota"), React.createElement("th", null, "Dedução"))), React.createElement("tbody", null, FAIXAS_IRRF.map((f, i) => {
+        const prev = i > 0 ? FAIXAS_IRRF[i - 1].teto : 0;
+        const label = f.teto === Infinity ? `Acima de ${fmt(prev)}` : i === 0 ? `Até ${fmt(f.teto)}` : `${fmt(prev + 0.01)} a ${fmt(f.teto)}`;
+        return React.createElement("tr", {
+          key: i
+        }, React.createElement("td", null, label), React.createElement("td", null, (f.aliq * 100).toFixed(1).replace(".", ","), "%"), React.createElement("td", null, fmt(f.deducao)));
+      }))), React.createElement("p", {
+        className: "info-note"
+      }, "Em 2026, quem ganha até R$ 5.000 é isento (redutor cobre o imposto). Entre R$ 5.000 e R$ 7.350 há redução parcial. Acima de R$ 7.350 a tabela se aplica integralmente. Não considera dependentes ou outras deduções.")), React.createElement("div", {
+        className: "info-section"
+      }, React.createElement("h4", null, "FGTS sobre verbas rescisórias ", React.createElement("span", {
+        className: "info-badge info-badge-blue"
+      }, "Depositado")), React.createElement("p", null, "A empresa deve depositar 8% sobre o saldo de salário, 13º proporcional e aviso prévio indenizado na conta do FGTS do funcionário."), React.createElement("div", {
+        className: "info-formula"
+      }, "8% × (Saldo de salário + 13º + Aviso prévio indenizado)"), React.createElement("p", {
+        className: "info-note"
+      }, "Esse valor vai para a conta do FGTS, não é pago diretamente ao funcionário junto com as verbas.")), React.createElement("div", {
+        className: "info-section"
+      }, React.createElement("h4", null, "Multa do FGTS ", React.createElement("span", {
+        className: "info-badge info-badge-blue"
+      }, "Depositado")), React.createElement("p", null, "É uma multa que a empresa paga sobre o total acumulado de FGTS do funcionário (saldo anterior + depósito das verbas rescisórias)."), React.createElement("div", {
+        className: "info-formula"
+      }, "Total do FGTS acumulado × percentual da multa"), React.createElement("div", {
+        className: "info-tipo-grid"
+      }, React.createElement("div", {
+        className: "info-tipo-card"
+      }, React.createElement("strong", null, "Sem justa causa"), "Multa de 40% sobre o total do FGTS."), React.createElement("div", {
+        className: "info-tipo-card"
+      }, React.createElement("strong", null, "Acordo mútuo"), "Multa de 20% sobre o total do FGTS."), React.createElement("div", {
+        className: "info-tipo-card"
+      }, React.createElement("strong", null, "Pedido de demissão"), "Sem multa (0%)."), React.createElement("div", {
+        className: "info-tipo-card"
+      }, React.createElement("strong", null, "Justa causa"), "Sem multa (0%)."))), React.createElement("div", {
+        className: "info-section"
+      }, React.createElement("h4", null, "Resumo por tipo de rescisão"), React.createElement("div", {
+        className: "info-table-wrap"
+      }, React.createElement("table", {
+        className: "info-table"
+      }, React.createElement("thead", null, React.createElement("tr", null, React.createElement("th", null, "Verba"), React.createElement("th", null, "Sem justa causa"), React.createElement("th", null, "Justa causa"), React.createElement("th", null, "Pedido demissão"), React.createElement("th", null, "Acordo mútuo"))), React.createElement("tbody", null, React.createElement("tr", null, React.createElement("td", null, "Saldo de salário"), React.createElement("td", null, "Sim"), React.createElement("td", null, "Sim"), React.createElement("td", null, "Sim"), React.createElement("td", null, "Sim")), React.createElement("tr", null, React.createElement("td", null, "13º proporcional"), React.createElement("td", null, "Sim"), React.createElement("td", null, "Não"), React.createElement("td", null, "Sim"), React.createElement("td", null, "Sim")), React.createElement("tr", null, React.createElement("td", null, "Férias proporcionais"), React.createElement("td", null, "Sim"), React.createElement("td", null, "Não"), React.createElement("td", null, "Sim"), React.createElement("td", null, "Sim")), React.createElement("tr", null, React.createElement("td", null, "Férias vencidas"), React.createElement("td", null, "Sim"), React.createElement("td", null, "Sim"), React.createElement("td", null, "Sim"), React.createElement("td", null, "Sim")), React.createElement("tr", null, React.createElement("td", null, "Aviso prévio"), React.createElement("td", null, "Integral"), React.createElement("td", null, "Não"), React.createElement("td", null, "Desconto"), React.createElement("td", null, "50%")), React.createElement("tr", null, React.createElement("td", null, "INSS"), React.createElement("td", null, "Sim"), React.createElement("td", null, "Sim"), React.createElement("td", null, "Sim"), React.createElement("td", null, "Sim")), React.createElement("tr", null, React.createElement("td", null, "IRRF"), React.createElement("td", null, "Sim"), React.createElement("td", null, "Sim"), React.createElement("td", null, "Sim"), React.createElement("td", null, "Sim")), React.createElement("tr", null, React.createElement("td", null, "Multa FGTS"), React.createElement("td", null, "40%"), React.createElement("td", null, "Não"), React.createElement("td", null, "Não"), React.createElement("td", null, "20%")))))));
     }
-
     function InfoPJ() {
-      return (
-        <React.Fragment>
-          <div className="info-section">
-            <p>No contrato PJ <strong>não existe vínculo trabalhista</strong>. Por isso, não há 13º salário, férias, FGTS ou INSS por padrão. Porém, alguns contratos PJ preveem o pagamento de 13º e férias — nesses casos, ative as opções correspondentes no formulário.</p>
-          </div>
-
-          <div className="info-section">
-            <h4>Saldo de pagamento <span className="info-badge info-badge-green">Crédito</span></h4>
-            <p>Valor proporcional aos dias trabalhados no mês do encerramento do contrato.</p>
-            <div className="info-formula">Valor mensal ÷ 30 × dias trabalhados no mês</div>
-          </div>
-
-          <div className="info-section">
-            <h4>Multa contratual <span className="info-badge info-badge-blue">Variável</span></h4>
-            <p>Percentual sobre o valor mensal previsto no contrato como penalidade por rescisão antecipada. Quem encerra o contrato antes do prazo pode ter que pagar a multa à outra parte.</p>
-            <div className="info-formula">Valor mensal × (percentual ÷ 100)</div>
-            <div className="info-tipo-grid">
-              <div className="info-tipo-card">
-                <strong>Contratante encerrou</strong>
-                O PJ recebe a multa (crédito).
-              </div>
-              <div className="info-tipo-card">
-                <strong>Prestador encerrou</strong>
-                O PJ paga a multa (desconto).
-              </div>
-              <div className="info-tipo-card">
-                <strong>Término / Acordo</strong>
-                Sem multa.
-              </div>
-            </div>
-          </div>
-
-          <div className="info-section">
-            <h4>Aviso prévio <span className="info-badge info-badge-blue">Variável</span></h4>
-            <p>Período de antecedência para comunicar o encerramento. O padrão é 30 dias, mas depende do que foi combinado no contrato.</p>
-            <div className="info-formula">Valor mensal ÷ 30 × dias de aviso prévio</div>
-            <div className="info-tipo-grid">
-              <div className="info-tipo-card">
-                <strong>Contratante encerrou</strong>
-                Se não cumpriu o aviso, PJ recebe indenização (crédito).
-              </div>
-              <div className="info-tipo-card">
-                <strong>Prestador encerrou</strong>
-                Se não cumpriu o aviso, PJ tem desconto.
-              </div>
-              <div className="info-tipo-card">
-                <strong>Término / Acordo</strong>
-                Sem aviso prévio.
-              </div>
-            </div>
-          </div>
-
-          <div className="info-section">
-            <h4>13º proporcional <span className="info-badge info-badge-yellow">Opcional</span></h4>
-            <p>Calculado apenas se o contrato PJ prevê esse benefício. Proporcional aos meses trabalhados no ano do encerramento, usando a regra dos 15 dias (mês com 15+ dias trabalhados conta como mês inteiro).</p>
-            <div className="info-formula">Valor mensal ÷ 12 × meses trabalhados no ano</div>
-          </div>
-
-          <div className="info-section">
-            <h4>Férias proporcionais + 1/3 <span className="info-badge info-badge-yellow">Opcional</span></h4>
-            <p>Calculado apenas se o contrato PJ prevê esse benefício. Proporcional aos meses desde o último aniversário de contrato, acrescido de 1/3 constitucional. Usa a regra dos 15 dias.</p>
-            <div className="info-formula">(Valor mensal ÷ 12 × meses) + 1/3</div>
-          </div>
-
-          <div className="info-section">
-            <h4>Resumo por tipo de encerramento</h4>
-            <div className="info-table-wrap"><table className="info-table">
-              <thead>
-                <tr>
-                  <th>Item</th>
-                  <th>Contratante encerrou</th>
-                  <th>Prestador encerrou</th>
-                  <th>Término</th>
-                  <th>Acordo</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td>Saldo de pagamento</td><td>Sim</td><td>Sim</td><td>Sim</td><td>Sim</td></tr>
-                <tr><td>Multa contratual</td><td>Recebe</td><td>Paga</td><td>Não</td><td>Não</td></tr>
-                <tr><td>Aviso prévio</td><td>Recebe</td><td>Paga</td><td>Não</td><td>Não</td></tr>
-                <tr><td>13º proporcional</td><td colSpan="4">Se previsto em contrato (opcional)</td></tr>
-                <tr><td>Férias proporcionais + 1/3</td><td colSpan="4">Se previsto em contrato (opcional)</td></tr>
-              </tbody>
-            </table></div>
-          </div>
-        </React.Fragment>
-      );
+      return React.createElement(React.Fragment, null, React.createElement("div", {
+        className: "info-section"
+      }, React.createElement("p", null, "No contrato PJ ", React.createElement("strong", null, "não existe vínculo trabalhista"), ". Por isso, não há 13º salário, férias, FGTS ou INSS por padrão. Porém, alguns contratos PJ preveem o pagamento de 13º e férias — nesses casos, ative as opções correspondentes no formulário.")), React.createElement("div", {
+        className: "info-section"
+      }, React.createElement("h4", null, "Saldo de pagamento ", React.createElement("span", {
+        className: "info-badge info-badge-green"
+      }, "Crédito")), React.createElement("p", null, "Valor proporcional aos dias trabalhados no mês do encerramento do contrato."), React.createElement("div", {
+        className: "info-formula"
+      }, "Valor mensal ÷ 30 × dias trabalhados no mês")), React.createElement("div", {
+        className: "info-section"
+      }, React.createElement("h4", null, "Multa contratual ", React.createElement("span", {
+        className: "info-badge info-badge-blue"
+      }, "Variável")), React.createElement("p", null, "Percentual sobre o valor mensal previsto no contrato como penalidade por rescisão antecipada. Quem encerra o contrato antes do prazo pode ter que pagar a multa à outra parte."), React.createElement("div", {
+        className: "info-formula"
+      }, "Valor mensal × (percentual ÷ 100)"), React.createElement("div", {
+        className: "info-tipo-grid"
+      }, React.createElement("div", {
+        className: "info-tipo-card"
+      }, React.createElement("strong", null, "Contratante encerrou"), "O PJ recebe a multa (crédito)."), React.createElement("div", {
+        className: "info-tipo-card"
+      }, React.createElement("strong", null, "Prestador encerrou"), "O PJ paga a multa (desconto)."), React.createElement("div", {
+        className: "info-tipo-card"
+      }, React.createElement("strong", null, "Término / Acordo"), "Sem multa."))), React.createElement("div", {
+        className: "info-section"
+      }, React.createElement("h4", null, "Aviso prévio ", React.createElement("span", {
+        className: "info-badge info-badge-blue"
+      }, "Variável")), React.createElement("p", null, "Período de antecedência para comunicar o encerramento. O padrão é 30 dias, mas depende do que foi combinado no contrato."), React.createElement("div", {
+        className: "info-formula"
+      }, "Valor mensal ÷ 30 × dias de aviso prévio"), React.createElement("div", {
+        className: "info-tipo-grid"
+      }, React.createElement("div", {
+        className: "info-tipo-card"
+      }, React.createElement("strong", null, "Contratante encerrou"), "Se não cumpriu o aviso, PJ recebe indenização (crédito)."), React.createElement("div", {
+        className: "info-tipo-card"
+      }, React.createElement("strong", null, "Prestador encerrou"), "Se não cumpriu o aviso, PJ tem desconto."), React.createElement("div", {
+        className: "info-tipo-card"
+      }, React.createElement("strong", null, "Término / Acordo"), "Sem aviso prévio."))), React.createElement("div", {
+        className: "info-section"
+      }, React.createElement("h4", null, "13º proporcional ", React.createElement("span", {
+        className: "info-badge info-badge-yellow"
+      }, "Opcional")), React.createElement("p", null, "Calculado apenas se o contrato PJ prevê esse benefício. Proporcional aos meses trabalhados no ano do encerramento, usando a regra dos 15 dias (mês com 15+ dias trabalhados conta como mês inteiro)."), React.createElement("div", {
+        className: "info-formula"
+      }, "Valor mensal ÷ 12 × meses trabalhados no ano")), React.createElement("div", {
+        className: "info-section"
+      }, React.createElement("h4", null, "Férias proporcionais + 1/3 ", React.createElement("span", {
+        className: "info-badge info-badge-yellow"
+      }, "Opcional")), React.createElement("p", null, "Calculado apenas se o contrato PJ prevê esse benefício. Proporcional aos meses desde o último aniversário de contrato, acrescido de 1/3 constitucional. Usa a regra dos 15 dias."), React.createElement("div", {
+        className: "info-formula"
+      }, "(Valor mensal ÷ 12 × meses) + 1/3")), React.createElement("div", {
+        className: "info-section"
+      }, React.createElement("h4", null, "Resumo por tipo de encerramento"), React.createElement("div", {
+        className: "info-table-wrap"
+      }, React.createElement("table", {
+        className: "info-table"
+      }, React.createElement("thead", null, React.createElement("tr", null, React.createElement("th", null, "Item"), React.createElement("th", null, "Contratante encerrou"), React.createElement("th", null, "Prestador encerrou"), React.createElement("th", null, "Término"), React.createElement("th", null, "Acordo"))), React.createElement("tbody", null, React.createElement("tr", null, React.createElement("td", null, "Saldo de pagamento"), React.createElement("td", null, "Sim"), React.createElement("td", null, "Sim"), React.createElement("td", null, "Sim"), React.createElement("td", null, "Sim")), React.createElement("tr", null, React.createElement("td", null, "Multa contratual"), React.createElement("td", null, "Recebe"), React.createElement("td", null, "Paga"), React.createElement("td", null, "Não"), React.createElement("td", null, "Não")), React.createElement("tr", null, React.createElement("td", null, "Aviso prévio"), React.createElement("td", null, "Recebe"), React.createElement("td", null, "Paga"), React.createElement("td", null, "Não"), React.createElement("td", null, "Não")), React.createElement("tr", null, React.createElement("td", null, "13º proporcional"), React.createElement("td", {
+        colSpan: "4"
+      }, "Se previsto em contrato (opcional)")), React.createElement("tr", null, React.createElement("td", null, "Férias proporcionais + 1/3"), React.createElement("td", {
+        colSpan: "4"
+      }, "Se previsto em contrato (opcional)")))))));
     }
-
+    
     // ==================== App principal ====================
-    function App({ onLogout }) {
+    function App({
+      onLogout
+    }) {
       const STORAGE_KEY = "rescisoes_clt";
-
       const [registros, setRegistros] = useState(() => {
         try {
           const saved = localStorage.getItem(STORAGE_KEY);
@@ -2841,7 +2527,6 @@
           return [];
         }
       });
-
       const [editando, setEditando] = useState(null);
       const [detalheAtual, setDetalheAtual] = useState(null);
       const [highlightDetalhe, setHighlightDetalhe] = useState(false);
@@ -2851,36 +2536,43 @@
       const [showInfo, setShowInfo] = useState(false);
       const detalheRef = useRef(null);
       const toastTimersRef = useRef([]);
-
       useEffect(() => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(registros));
       }, [registros]);
-
       useEffect(() => {
         return () => toastTimersRef.current.forEach(clearTimeout);
       }, []);
-
-      const showToast = useCallback((text) => {
+      const showToast = useCallback(text => {
         const id = Date.now();
-        setToasts((prev) => [...prev, { id, text }]);
-        const timer = setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3000);
+        setToasts(prev => [...prev, {
+          id,
+          text
+        }]);
+        const timer = setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
         toastTimersRef.current.push(timer);
       }, []);
-
       const scrollToDetalhe = useCallback(() => {
         setTimeout(() => {
           if (detalheRef.current) {
-            detalheRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+            detalheRef.current.scrollIntoView({
+              behavior: "smooth",
+              block: "start"
+            });
           }
         }, 50);
       }, []);
-
       const handleCalcular = useCallback((dados, resultado) => {
         if (editando) {
-          setRegistros((prev) =>
-            prev.map((r) => (r.id === editando.id ? { ...r, dados, resultado } : r))
-          );
-          setDetalheAtual({ id: editando.id, dados, resultado });
+          setRegistros(prev => prev.map(r => r.id === editando.id ? {
+            ...r,
+            dados,
+            resultado
+          } : r));
+          setDetalheAtual({
+            id: editando.id,
+            dados,
+            resultado
+          });
           setEditando(null);
           showToast("Registro atualizado com sucesso!");
         } else {
@@ -2888,9 +2580,9 @@
             id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
             dados,
             resultado,
-            criadoEm: new Date().toISOString(),
+            criadoEm: new Date().toISOString()
           };
-          setRegistros((prev) => [...prev, novoRegistro]);
+          setRegistros(prev => [...prev, novoRegistro]);
           setDetalheAtual(novoRegistro);
           showToast("Cálculo realizado com sucesso!");
         }
@@ -2898,128 +2590,122 @@
         setTimeout(() => setHighlightDetalhe(false), 700);
         scrollToDetalhe();
       }, [editando, showToast, scrollToDetalhe]);
-
-      const handleEditar = useCallback((registro) => {
+      const handleEditar = useCallback(registro => {
         setEditando(registro);
         setDetalheAtual(null);
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth"
+        });
       }, []);
-
-      const handleExcluir = useCallback((id) => {
+      const handleExcluir = useCallback(id => {
         setModalExcluir(id);
       }, []);
-
       const confirmarExclusao = useCallback(() => {
         const id = modalExcluir;
-        setRegistros((prev) => prev.filter((r) => r.id !== id));
+        setRegistros(prev => prev.filter(r => r.id !== id));
         if (detalheAtual?.id === id) setDetalheAtual(null);
         if (editando?.id === id) setEditando(null);
         setModalExcluir(null);
         showToast("Registro excluído.");
       }, [modalExcluir, detalheAtual, editando, showToast]);
-
       const handleCancelarEdicao = useCallback(() => {
         setEditando(null);
       }, []);
-
       const cancelarExclusao = useCallback(() => {
         setModalExcluir(null);
       }, []);
-
-      const handleVerDetalhe = useCallback((registro) => {
+      const handleVerDetalhe = useCallback(registro => {
         setDetalheAtual(registro);
         setHighlightDetalhe(true);
         setTimeout(() => setHighlightDetalhe(false), 700);
         scrollToDetalhe();
       }, [scrollToDetalhe]);
-
       const handleExportar = useCallback(() => {
         exportarExcel(registros);
         showToast("Planilha Excel exportada!");
       }, [registros, showToast]);
-
-      const handleImprimir = useCallback((registro) => {
+      const handleImprimir = useCallback(registro => {
         gerarRecibo(registro);
       }, []);
-
-      return (
-        <>
-          <Toast messages={toasts} />
-          {modalExcluir && (
-            <ConfirmModal
-              title="Excluir registro"
-              message="Tem certeza que deseja excluir este registro? Essa ação não pode ser desfeita."
-              onConfirm={confirmarExclusao}
-              onCancel={cancelarExclusao}
-            />
-          )}
-          <header>
-            <h1>Calculadora de Rescisão</h1>
-            <p key={regime}>{regime === "clt" ? "Simulador de verbas rescisórias conforme a legislação trabalhista" : "Simulador de encerramento de contrato PJ"}</p>
-            <button type="button" className="btn-logout" onClick={onLogout}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                <polyline points="16 17 21 12 16 7"/>
-                <line x1="21" y1="12" x2="9" y2="12"/>
-              </svg>
-              Sair
-            </button>
-          </header>
-          <div className="container">
-            <div className="info-toggle">
-              <button type="button" onClick={() => setShowInfo((v) => !v)}>
-                <span className="info-icon">i</span>
-                {showInfo ? "Fechar informações" : "Sobre os cálculos"}
-              </button>
-            </div>
-            {showInfo && (
-              <div className="disclaimer">
-                <InfoPanel />
-              </div>
-            )}
-
-            <Formulario
-              onCalcular={handleCalcular}
-              editando={editando}
-              onCancelarEdicao={handleCancelarEdicao}
-              regime={regime}
-              onRegimeChange={setRegime}
-            />
-
-            {detalheAtual && (
-              <Detalhamento
-                ref={detalheRef}
-                resultado={detalheAtual.resultado}
-                dados={detalheAtual.dados}
-                highlight={highlightDetalhe}
-                onImprimir={handleImprimir}
-              />
-            )}
-
-            <TabelaRegistros
-              registros={registros}
-              onEditar={handleEditar}
-              onExcluir={handleExcluir}
-              onExportar={handleExportar}
-              onVerDetalhe={handleVerDetalhe}
-              onImprimir={handleImprimir}
-            />
-          </div>
-        </>
-      );
+      return React.createElement(React.Fragment, null, React.createElement(Toast, {
+        messages: toasts
+      }), modalExcluir && React.createElement(ConfirmModal, {
+        title: "Excluir registro",
+        message: "Tem certeza que deseja excluir este registro? Essa ação não pode ser desfeita.",
+        onConfirm: confirmarExclusao,
+        onCancel: cancelarExclusao
+      }), React.createElement("header", null, React.createElement("h1", null, "Calculadora de Rescisão"), React.createElement("p", {
+        key: regime
+      }, regime === "clt" ? "Simulador de verbas rescisórias conforme a legislação trabalhista" : "Simulador de encerramento de contrato PJ"), React.createElement("button", {
+        type: "button",
+        className: "btn-logout",
+        onClick: onLogout
+      }, React.createElement("svg", {
+        width: "14",
+        height: "14",
+        viewBox: "0 0 24 24",
+        fill: "none",
+        stroke: "currentColor",
+        strokeWidth: "2",
+        strokeLinecap: "round",
+        strokeLinejoin: "round"
+      }, React.createElement("path", {
+        d: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"
+      }), React.createElement("polyline", {
+        points: "16 17 21 12 16 7"
+      }), React.createElement("line", {
+        x1: "21",
+        y1: "12",
+        x2: "9",
+        y2: "12"
+      })), "Sair")), React.createElement("div", {
+        className: "container"
+      }, React.createElement("div", {
+        className: "info-toggle"
+      }, React.createElement("button", {
+        type: "button",
+        onClick: () => setShowInfo(v => !v)
+      }, React.createElement("span", {
+        className: "info-icon"
+      }, "i"), showInfo ? "Fechar informações" : "Sobre os cálculos")), showInfo && React.createElement("div", {
+        className: "disclaimer"
+      }, React.createElement(InfoPanel, null)), React.createElement(Formulario, {
+        onCalcular: handleCalcular,
+        editando: editando,
+        onCancelarEdicao: handleCancelarEdicao,
+        regime: regime,
+        onRegimeChange: setRegime
+      }), detalheAtual && React.createElement(Detalhamento, {
+        ref: detalheRef,
+        resultado: detalheAtual.resultado,
+        dados: detalheAtual.dados,
+        highlight: highlightDetalhe,
+        onImprimir: handleImprimir
+      }), React.createElement(TabelaRegistros, {
+        registros: registros,
+        onEditar: handleEditar,
+        onExcluir: handleExcluir,
+        onExportar: handleExportar,
+        onVerDetalhe: handleVerDetalhe,
+        onImprimir: handleImprimir
+      })));
     }
-
     function Root() {
       const [authed, setAuthed] = useState(isAuthenticated);
       const handleLogout = useCallback(() => {
         sessionStorage.removeItem(AUTH_KEY);
         setAuthed(false);
       }, []);
-      if (!authed) return <LoginScreen onLogin={() => setAuthed(true)} />;
-      return <App onLogout={handleLogout} />;
+      if (!authed) return React.createElement(LoginScreen, {
+        onLogin: () => setAuthed(true)
+      });
+      return React.createElement(App, {
+        onLogout: handleLogout
+      });
     }
-
-    ReactDOM.createRoot(document.getElementById("root")).render(<Root />);
+    ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(Root, null));
+    
   </script>
 </body>
 </html>

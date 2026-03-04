@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Testes — Calculadora de Rescisão</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f4f6f9; color: #2c3e50; padding: 24px; }
+    h1 { margin-bottom: 8px; }
+    .summary { margin-bottom: 16px; font-size: 1.1em; }
+    .pass { color: #27ae60; }
+    .fail { color: #c0392b; }
+    .group { background: #fff; border-radius: 6px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .group h2 { font-size: 1em; margin-bottom: 8px; color: #1a5276; }
+    .test { padding: 4px 0; font-size: 0.9em; font-family: monospace; }
+    .test.ok::before { content: "✓ "; color: #27ae60; }
+    .test.fail::before { content: "✗ "; color: #c0392b; font-weight: bold; }
+    .test.fail { color: #c0392b; }
+  </style>
+</head>
+<body>
+  <h1>Testes — Calculadora de Rescisão</h1>
+  <div id="summary" class="summary"></div>
+  <div id="results"></div>
+
+  <script src="calc.js"></script>
+  <script>
+    // =====================================================================
+    // Mini test runner
+    // =====================================================================
+    let passed = 0, failed = 0;
+    const results = document.getElementById("results");
+    let currentGroup = null;
+
+    function group(name) {
+      const div = document.createElement("div");
+      div.className = "group";
+      const h2 = document.createElement("h2");
+      h2.textContent = name;
+      div.appendChild(h2);
+      results.appendChild(div);
+      currentGroup = div;
+    }
+
+    function assert(desc, condition) {
+      const el = document.createElement("div");
+      el.className = condition ? "test ok" : "test fail";
+      el.textContent = desc;
+      currentGroup.appendChild(el);
+      if (condition) passed++; else failed++;
+    }
+
+    function assertNear(desc, actual, expected, tol = 0.01) {
+      const ok = Math.abs(actual - expected) <= tol;
+      const suffix = ok ? "" : ` (got ${actual.toFixed(2)}, expected ${expected.toFixed(2)})`;
+      assert(desc + suffix, ok);
+    }
+
+    // =====================================================================
+    // Testes: INSS progressivo
+    // =====================================================================
+    group("INSS progressivo");
+    assertNear("Base 0 → desconto 0", calcINSS(0), 0);
+    assertNear("Base 1621 → 1ª faixa cheia (7.5%)", calcINSS(1621), 1621 * 0.075);
+    assertNear("Base 1800 → 1ª faixa + parte da 2ª", calcINSS(1800),
+      1621 * 0.075 + (1800 - 1621) * 0.09);
+    assertNear("Base 3000 → 3 faixas", calcINSS(3000),
+      1621 * 0.075 + (2902.84 - 1621) * 0.09 + (3000 - 2902.84) * 0.12);
+    assertNear("Base 10000 → teto", calcINSS(10000),
+      1621 * 0.075 + (2902.84 - 1621) * 0.09 + (4354.27 - 2902.84) * 0.12 + (8475.55 - 4354.27) * 0.14);
+
+    // =====================================================================
+    // Testes: IRRF
+    // =====================================================================
+    group("IRRF progressivo");
+    assertNear("Base 2000 → isento (< 2428.80 e < 5000)", calcIRRF(2000), 0);
+    assertNear("Base 4000 → isento pelo redutor 2026 (< 5000)", calcIRRF(4000), 0);
+    assertNear("Base 0 → 0", calcIRRF(0), 0);
+    assertNear("Base 8000 → 27.5% sem redutor", calcIRRF(8000), 8000 * 0.275 - 908.73);
+
+    // =====================================================================
+    // Testes: CLT — Sem justa causa, aviso não trabalhado
+    // =====================================================================
+    group("CLT: Sem justa causa (aviso não trabalhado)");
+    {
+      const r = calcularRescisao({
+        salario: 3000,
+        dataContratacao: "2022-03-01",
+        dataDemissao: "2025-06-15",
+        tipoRescisao: "sem_justa_causa",
+        feriasVencidas: 0,
+        saldoFGTS: 10000,
+        avisoPrevioTrabalhado: false,
+      });
+      assert("Dias trabalhados = 15", r.diasTrabalhados === 15);
+      assertNear("Saldo salário = 15 dias", r.saldoSalario, 3000 / 30 * 15);
+      assert("Dias aviso prévio = 39", r.diasAvisoPrevio === 39);
+      assertNear("Aviso prévio indenizado", r.avisoPrevioIndenizado, (3000 / 30) * 39);
+      assert("Multa FGTS 40%", r.percMultaFGTS === 40);
+      assert("Desconto aviso prévio = 0", r.descontoAvisoPrevio === 0);
+      assert("FGTS depositado > 0", r.totalFGTSDepositado > 0);
+      assert("Total geral > total líquido direto", r.totalGeral > r.totalLiquidoDireto);
+    }
+
+    // =====================================================================
+    // Testes: CLT — Sem justa causa, aviso trabalhado
+    // =====================================================================
+    group("CLT: Sem justa causa (aviso trabalhado)");
+    {
+      const r = calcularRescisao({
+        salario: 3000,
+        dataContratacao: "2022-03-01",
+        dataDemissao: "2025-06-15",
+        tipoRescisao: "sem_justa_causa",
+        feriasVencidas: 1,
+        saldoFGTS: 5000,
+        avisoPrevioTrabalhado: true,
+      });
+      assert("Aviso prévio indenizado = 0 (trabalhado)", r.avisoPrevioIndenizado === 0);
+      assert("Dias aviso prévio = 0", r.diasAvisoPrevio === 0);
+      assertNear("Férias vencidas = salário + 1/3", r.feriasVencidasValor, 3000 + 1000);
+      assert("Multa FGTS 40%", r.percMultaFGTS === 40);
+    }
+
+    // =====================================================================
+    // Testes: CLT — Justa causa
+    // =====================================================================
+    group("CLT: Justa causa");
+    {
+      const r = calcularRescisao({
+        salario: 5000,
+        dataContratacao: "2020-01-10",
+        dataDemissao: "2025-08-20",
+        tipoRescisao: "justa_causa",
+        feriasVencidas: 2,
+        saldoFGTS: 20000,
+        avisoPrevioTrabalhado: false,
+      });
+      assert("Sem aviso prévio", r.avisoPrevioIndenizado === 0);
+      assert("Sem desconto aviso prévio", r.descontoAvisoPrevio === 0);
+      assert("13º = 0 (justa causa)", r.decimoTerceiro === 0);
+      assert("Meses 13º = 0", r.mesesDecimo === 0);
+      assert("Férias proporcionais = 0", r.feriasPropValor === 0);
+      assert("Multa FGTS = 0%", r.percMultaFGTS === 0);
+      assertNear("Férias vencidas = 2 * (sal + 1/3)", r.feriasVencidasValor, 2 * (5000 + 5000 / 3));
+      assert("Saldo salário > 0", r.saldoSalario > 0);
+    }
+
+    // =====================================================================
+    // Testes: CLT — Pedido de demissão (aviso não trabalhado)
+    // =====================================================================
+    group("CLT: Pedido de demissão (aviso não trabalhado)");
+    {
+      const r = calcularRescisao({
+        salario: 4000,
+        dataContratacao: "2023-06-01",
+        dataDemissao: "2025-09-30",
+        tipoRescisao: "pedido_demissao",
+        feriasVencidas: 0,
+        saldoFGTS: 8000,
+        avisoPrevioTrabalhado: false,
+      });
+      assert("Aviso prévio indenizado = 0", r.avisoPrevioIndenizado === 0);
+      assertNear("Desconto aviso prévio = 30 dias", r.descontoAvisoPrevio, (4000 / 30) * 30);
+      assert("Multa FGTS = 0%", r.percMultaFGTS === 0);
+      assert("13º > 0", r.decimoTerceiro > 0);
+      assert("Férias proporcionais > 0", r.feriasPropValor > 0);
+    }
+
+    // =====================================================================
+    // Testes: CLT — Pedido de demissão (aviso trabalhado)
+    // =====================================================================
+    group("CLT: Pedido de demissão (aviso trabalhado)");
+    {
+      const r = calcularRescisao({
+        salario: 4000,
+        dataContratacao: "2023-06-01",
+        dataDemissao: "2025-09-30",
+        tipoRescisao: "pedido_demissao",
+        feriasVencidas: 0,
+        saldoFGTS: 8000,
+        avisoPrevioTrabalhado: true,
+      });
+      assert("Sem desconto aviso prévio (trabalhado)", r.descontoAvisoPrevio === 0);
+      assert("Sem aviso prévio indenizado", r.avisoPrevioIndenizado === 0);
+    }
+
+    // =====================================================================
+    // Testes: CLT — Acordo mútuo
+    // =====================================================================
+    group("CLT: Acordo mútuo");
+    {
+      const r = calcularRescisao({
+        salario: 6000,
+        dataContratacao: "2020-02-01",
+        dataDemissao: "2025-07-15",
+        tipoRescisao: "acordo_mutuo",
+        feriasVencidas: 0,
+        saldoFGTS: 30000,
+        avisoPrevioTrabalhado: false,
+      });
+      assert("Dias aviso prévio = 45", r.diasAvisoPrevio === 45);
+      assertNear("Aviso prévio = 50% do total", r.avisoPrevioIndenizado, (6000 / 30 * 45) * 0.5);
+      assert("Multa FGTS = 20%", r.percMultaFGTS === 20);
+      assert("13º > 0", r.decimoTerceiro > 0);
+      assert("Férias proporcionais > 0", r.feriasPropValor > 0);
+    }
+
+    // =====================================================================
+    // Testes: 13º proporcional
+    // =====================================================================
+    group("CLT: 13º proporcional — cálculo de meses");
+    {
+      const r1 = calcularRescisao({
+        salario: 1200,
+        dataContratacao: "2025-01-02",
+        dataDemissao: "2025-06-15",
+        tipoRescisao: "sem_justa_causa",
+        feriasVencidas: 0, saldoFGTS: 0,
+        avisoPrevioTrabalhado: true,
+      });
+      assert("13º: 6 meses (jan a jun, aviso trabalhado)", r1.mesesDecimo === 6);
+      assertNear("13º valor = 6/12 * salário", r1.decimoTerceiro, (1200 / 12) * 6);
+    }
+
+    // =====================================================================
+    // Testes: Férias proporcionais
+    // =====================================================================
+    group("CLT: Férias proporcionais");
+    {
+      const r = calcularRescisao({
+        salario: 3000,
+        dataContratacao: "2024-03-01",
+        dataDemissao: "2025-09-15",
+        tipoRescisao: "sem_justa_causa",
+        feriasVencidas: 0, saldoFGTS: 0,
+        avisoPrevioTrabalhado: true,
+      });
+      assert("Férias prop: 6 meses", r.mesesFeriasProp === 6);
+      const base = (3000 / 12) * 6;
+      assertNear("Férias prop valor = base + 1/3", r.feriasPropValor, base + base / 3);
+    }
+
+    // =====================================================================
+    // Testes: Aviso prévio proporcional (cap 90 dias)
+    // =====================================================================
+    group("CLT: Aviso prévio proporcional — cap 90 dias");
+    {
+      const r = calcularRescisao({
+        salario: 2000,
+        dataContratacao: "2000-01-01",
+        dataDemissao: "2025-06-15",
+        tipoRescisao: "sem_justa_causa",
+        feriasVencidas: 0, saldoFGTS: 0,
+        avisoPrevioTrabalhado: false,
+      });
+      assert("Aviso prévio capped em 90 dias", r.diasAvisoPrevio === 90);
+    }
+
+    // =====================================================================
+    // Testes: PJ — Contratante encerrou
+    // =====================================================================
+    group("PJ: Contratante encerrou");
+    {
+      const r = calcularRescisaoPJ({
+        salario: 10000,
+        dataContratacao: "2024-01-15",
+        dataDemissao: "2025-07-20",
+        tipoRescisaoPJ: "contratante",
+        multaContratualPerc: 20,
+        diasAvisoPrevioPJ: 30,
+        avisoPrevioCumpridoPJ: false,
+        incluir13PJ: true,
+        incluirFeriasPJ: true,
+      });
+      assert("Dias trabalhados = 20", r.diasTrabalhados === 20);
+      assertNear("Saldo pagamento = 20 dias", r.saldoPagamento, (10000 / 30) * 20);
+      assertNear("Multa contratual crédito = 20%", r.multaContratualCredito, 10000 * 0.20);
+      assert("Multa contratual desconto = 0", r.multaContratualDesconto === 0);
+      assertNear("Aviso prévio crédito = 30 dias", r.avisoPrevioCredito, (10000 / 30) * 30);
+      assert("Aviso prévio desconto = 0", r.avisoPrevioDesconto === 0);
+      assert("13º > 0", r.decimoTerceiro > 0);
+      assert("Férias proporcionais > 0", r.feriasPropValor > 0);
+      assert("FGTS = 0 (PJ)", r.totalFGTSDepositado === 0);
+      assertNear("Total geral = total líquido", r.totalGeral, r.totalLiquidoDireto);
+    }
+
+    // =====================================================================
+    // Testes: PJ — Prestador encerrou
+    // =====================================================================
+    group("PJ: Prestador encerrou");
+    {
+      const r = calcularRescisaoPJ({
+        salario: 8000,
+        dataContratacao: "2023-06-01",
+        dataDemissao: "2025-04-10",
+        tipoRescisaoPJ: "prestador",
+        multaContratualPerc: 15,
+        diasAvisoPrevioPJ: 30,
+        avisoPrevioCumpridoPJ: false,
+        incluir13PJ: false,
+        incluirFeriasPJ: false,
+      });
+      assert("Multa contratual crédito = 0 (prestador encerrou)", r.multaContratualCredito === 0);
+      assertNear("Multa contratual desconto = 15%", r.multaContratualDesconto, 8000 * 0.15);
+      assert("Aviso prévio crédito = 0", r.avisoPrevioCredito === 0);
+      assertNear("Aviso prévio desconto = 30 dias", r.avisoPrevioDesconto, (8000 / 30) * 30);
+      assert("13º = 0 (não incluído)", r.decimoTerceiro === 0);
+      assert("Férias = 0 (não incluído)", r.feriasPropValor === 0);
+      assert("Total descontos > 0", r.totalDescontos > 0);
+    }
+
+    // =====================================================================
+    // Testes: PJ — Aviso prévio cumprido
+    // =====================================================================
+    group("PJ: Aviso prévio cumprido");
+    {
+      const r = calcularRescisaoPJ({
+        salario: 5000,
+        dataContratacao: "2024-01-01",
+        dataDemissao: "2025-06-15",
+        tipoRescisaoPJ: "contratante",
+        multaContratualPerc: 0,
+        diasAvisoPrevioPJ: 30,
+        avisoPrevioCumpridoPJ: true,
+        incluir13PJ: false,
+        incluirFeriasPJ: false,
+      });
+      assert("Aviso prévio crédito = 0 (cumprido)", r.avisoPrevioCredito === 0);
+      assert("Aviso prévio desconto = 0 (cumprido)", r.avisoPrevioDesconto === 0);
+    }
+
+    // =====================================================================
+    // Testes: PJ — Término do contrato (sem multa/aviso)
+    // =====================================================================
+    group("PJ: Término do contrato");
+    {
+      const r = calcularRescisaoPJ({
+        salario: 7000,
+        dataContratacao: "2024-01-01",
+        dataDemissao: "2025-12-31",
+        tipoRescisaoPJ: "termino",
+        multaContratualPerc: 10,
+        diasAvisoPrevioPJ: 30,
+        avisoPrevioCumpridoPJ: false,
+        incluir13PJ: false,
+        incluirFeriasPJ: false,
+      });
+      assert("Sem multa crédito (término)", r.multaContratualCredito === 0);
+      assert("Sem multa desconto (término)", r.multaContratualDesconto === 0);
+      assert("Sem aviso crédito (término)", r.avisoPrevioCredito === 0);
+      assert("Sem aviso desconto (término)", r.avisoPrevioDesconto === 0);
+      assertNear("Total = saldo pagamento", r.totalGeral, r.saldoPagamento);
+    }
+
+    // =====================================================================
+    // Testes: Utilidades
+    // =====================================================================
+    group("Utilidades: diffAnos");
+    assert("diffAnos 3 anos exatos", diffAnos(parseDate("2020-01-01"), parseDate("2023-01-01")) === 3);
+    assert("diffAnos quase 3 anos", diffAnos(parseDate("2020-01-15"), parseDate("2023-01-14")) === 2);
+    assert("diffAnos mesmo ano", diffAnos(parseDate("2025-06-01"), parseDate("2025-12-01")) === 0);
+    assert("diffAnos 1 dia antes aniv", diffAnos(parseDate("2020-03-15"), parseDate("2021-03-14")) === 0);
+    assert("diffAnos exato aniv", diffAnos(parseDate("2020-03-15"), parseDate("2021-03-15")) === 1);
+
+    group("Utilidades: diasNoMes");
+    assert("Fevereiro 2024 (bissexto) = 29", diasNoMes(2024, 1) === 29);
+    assert("Fevereiro 2025 = 28", diasNoMes(2025, 1) === 28);
+    assert("Janeiro = 31", diasNoMes(2025, 0) === 31);
+    assert("Abril = 30", diasNoMes(2025, 3) === 30);
+
+    // =====================================================================
+    // Testes: Saldo de salário — cap 30 dias
+    // =====================================================================
+    group("CLT: Saldo de salário (cap 30 dias)");
+    {
+      const r = calcularRescisao({
+        salario: 3000,
+        dataContratacao: "2024-01-01",
+        dataDemissao: "2025-01-31",
+        tipoRescisao: "sem_justa_causa",
+        feriasVencidas: 0, saldoFGTS: 0,
+        avisoPrevioTrabalhado: true,
+      });
+      assert("Dias trabalhados capped em 30", r.diasTrabalhados === 30);
+      assertNear("Saldo salário = salário cheio", r.saldoSalario, 3000);
+    }
+
+    // =====================================================================
+    // Resumo
+    // =====================================================================
+    const summary = document.getElementById("summary");
+    const total = passed + failed;
+    const span = document.createElement("span");
+    if (failed === 0) {
+      span.className = "pass";
+      span.textContent = `✓ Todos os ${total} testes passaram!`;
+    } else {
+      span.className = "fail";
+      span.textContent = `✗ ${failed} de ${total} testes falharam`;
+    }
+    summary.appendChild(span);
+    document.title = failed === 0 ? `✓ ${total} testes OK` : `✗ ${failed} falhas`;
+  </script>
+</body>
+</html>
