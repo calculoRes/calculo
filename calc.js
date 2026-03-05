@@ -1,3 +1,24 @@
+// ==================== Salário Mínimo Histórico ====================
+const SALARIO_MINIMO = {
+  2015: 788.00, 2016: 880.00, 2017: 937.00, 2018: 954.00,
+  2019: 998.00, 2020: 1045.00, 2021: 1100.00, 2022: 1212.00,
+  2023: 1320.00, 2024: 1412.00, 2025: 1518.00, 2026: 1621.00
+};
+
+// Gera salários proporcionais por ano com base no salário atual e no histórico do mínimo.
+// Ex: se salário atual = 3242 (2× mínimo 2026), em 2023 retorna 2640 (2× mínimo 2023).
+function salariosProporcionalPorAno(anoInicio, anoFim, salarioAtual) {
+  const anoAtual = new Date().getFullYear();
+  const minimoAtual = SALARIO_MINIMO[anoAtual] || SALARIO_MINIMO[anoFim] || salarioAtual;
+  const fator = salarioAtual / minimoAtual;
+  const resultado = {};
+  for (let a = anoInicio; a <= anoFim; a++) {
+    const minimoAno = SALARIO_MINIMO[a];
+    resultado[a] = minimoAno ? Math.round(fator * minimoAno * 100) / 100 : salarioAtual;
+  }
+  return resultado;
+}
+
 // ==================== Utilidades ====================
 const fmt = v => v.toLocaleString("pt-BR", {
   style: "currency",
@@ -45,6 +66,76 @@ const diffAnos = (start, end) => {
   if (end < aniv) anos--;
   return Math.max(anos, 0);
 };
+
+// Estima o FGTS acumulado usando salários por ano × 8% × meses efetivos.
+// Itera mês a mês com rateio proporcional nos meses parciais (primeiro e último).
+// Inclui FGTS sobre 13º (8% sobre a fração proporcional do salário por ano).
+// salariosPorAno: objeto { ano: valor } ou número (salário fixo para todos os anos).
+function estimarFGTS(dataContratacao, dataDemissao, salariosPorAno) {
+  const inicio = parseDate(dataContratacao);
+  const fim = parseDate(dataDemissao);
+
+  // Compatibilidade: aceita número simples (salário fixo para todos os anos)
+  const salarioFixo = typeof salariosPorAno === "number" ? salariosPorAno : null;
+  const getSalario = ano => salarioFixo != null ? salarioFixo : (salariosPorAno[ano] || 0);
+
+  // Acumulador por ano
+  const porAno = {};
+
+  // Iterar mês a mês
+  let cursor = new Date(inicio);
+  while (cursor <= fim) {
+    const ano = cursor.getFullYear();
+    const mes = cursor.getMonth();
+    const diasNoMesAtual = diasNoMes(ano, mes);
+    const salario = getSalario(ano);
+
+    // Calcular dias efetivos neste mês
+    const primeiroDia = (ano === inicio.getFullYear() && mes === inicio.getMonth())
+      ? inicio.getDate() : 1;
+    const ultimoDia = (ano === fim.getFullYear() && mes === fim.getMonth())
+      ? fim.getDate() : diasNoMesAtual;
+    const diasEfetivos = ultimoDia - primeiroDia + 1;
+    const fracao = diasEfetivos / diasNoMesAtual;
+
+    const depositoMes = Math.round(salario * 0.08 * fracao * 100) / 100;
+
+    if (!porAno[ano]) {
+      porAno[ano] = { depositosSoma: 0, mesesEfetivos: 0 };
+    }
+    porAno[ano].depositosSoma += depositoMes;
+    porAno[ano].mesesEfetivos += fracao;
+
+    // Avançar para o próximo mês (dia 1)
+    cursor = new Date(ano, mes + 1, 1);
+  }
+
+  const detalhes = [];
+  let total = 0;
+
+  for (const ano of Object.keys(porAno).map(Number).sort()) {
+    const info = porAno[ano];
+    const salario = getSalario(ano);
+    const depositoMensal = Math.round(salario * 0.08 * 100) / 100;
+    const depositosSoma = Math.round(info.depositosSoma * 100) / 100;
+    // FGTS sobre 13º: 8% de (mesesEfetivos/12 * salário)
+    const fgts13 = Math.round(salario * (info.mesesEfetivos / 12) * 0.08 * 100) / 100;
+    const subtotal = Math.round((depositosSoma + fgts13) * 100) / 100;
+    total += subtotal;
+
+    detalhes.push({
+      ano,
+      salario,
+      meses: Math.round(info.mesesEfetivos * 100) / 100,
+      depositoMensal,
+      fgts13,
+      subtotal,
+    });
+  }
+
+  total = Math.round(total * 100) / 100;
+  return { total, detalhes };
+}
 
 // ==================== Tabela INSS 2026 (progressiva) ====================
 // Portaria Interministerial MPS/MF nº 13/2026

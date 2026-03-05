@@ -388,6 +388,161 @@
     }
 
     // =====================================================================
+    // Testes: estimarFGTS — período multi-ano (salário fixo × 8% × meses)
+    // =====================================================================
+    group("estimarFGTS: período de 3 anos cruzando anos");
+    {
+      const sal = 3000;
+      const dep = Math.round(sal * 0.08 * 100) / 100; // 240
+      const est = estimarFGTS("2023-03-01", "2026-02-28", sal);
+      assert("Retorna detalhes array", Array.isArray(est.detalhes));
+      assert("4 anos (2023–2026)", est.detalhes.length === 4);
+      assert("Total > 0", est.total > 0);
+      const d2023 = est.detalhes.find(d => d.ano === 2023);
+      assertNear("2023: depósito mensal = 8% de 3000", d2023.depositoMensal, dep);
+      assertNear("2023: 10 meses (mar-dez)", d2023.meses, 10);
+      const d2024 = est.detalhes.find(d => d.ano === 2024);
+      assertNear("2024: 12 meses", d2024.meses, 12);
+      const d2026 = est.detalhes.find(d => d.ano === 2026);
+      assertNear("2026: 2 meses (jan-fev)", d2026.meses, 2);
+      const somaSubtotais = est.detalhes.reduce((s, d) => s + d.subtotal, 0);
+      assertNear("Soma subtotais = total", somaSubtotais, est.total, 0.02);
+    }
+
+    // =====================================================================
+    // Testes: estimarFGTS — salário fixo para todos os anos
+    // =====================================================================
+    group("estimarFGTS: salário fixo independe do ano");
+    {
+      const sal = 5000;
+      const dep = Math.round(sal * 0.08 * 100) / 100; // 400
+      const est = estimarFGTS("2024-01-01", "2025-12-31", sal);
+      const d2024 = est.detalhes.find(d => d.ano === 2024);
+      const d2025 = est.detalhes.find(d => d.ano === 2025);
+      assertNear("2024: depósito = 8% de 5000", d2024.depositoMensal, dep);
+      assertNear("2025: depósito = 8% de 5000", d2025.depositoMensal, dep);
+      assertNear("2024: 12 meses", d2024.meses, 12);
+      assertNear("2025: 12 meses", d2025.meses, 12);
+      // Total = (400*12 + 400) * 2 = 10400  (depósitos + 13º por ano)
+      const subEsperado = Math.round((dep * 12 + sal * (12/12) * 0.08) * 100) / 100;
+      assertNear("Subtotal anual consistente", d2024.subtotal, subEsperado);
+    }
+
+    // =====================================================================
+    // Testes: estimarFGTS — período curto (mesmo ano, meses cheios)
+    // =====================================================================
+    group("estimarFGTS: período curto no mesmo ano");
+    {
+      const sal = 2000;
+      const dep = Math.round(sal * 0.08 * 100) / 100; // 160
+      const est = estimarFGTS("2025-06-01", "2025-09-30", sal);
+      assert("1 entrada (só 2025)", est.detalhes.length === 1);
+      const d = est.detalhes[0];
+      assert("Ano = 2025", d.ano === 2025);
+      assertNear("4 meses (jun-set)", d.meses, 4);
+      assertNear("Depósito mensal = 8%", d.depositoMensal, dep);
+      assertNear("FGTS 13º = 8% de 4/12 do salário", d.fgts13, sal * (4/12) * 0.08, 0.02);
+      assert("Total > 0", est.total > 0);
+    }
+
+    // =====================================================================
+    // Testes: estimarFGTS — inclui FGTS sobre 13º
+    // =====================================================================
+    group("estimarFGTS: FGTS sobre 13º incluído");
+    {
+      const sal = 3000;
+      const est = estimarFGTS("2025-01-01", "2025-12-31", sal);
+      const d = est.detalhes[0];
+      const fgts13Esperado = Math.round(sal * (12/12) * 0.08 * 100) / 100;
+      assertNear("FGTS 13º ano completo = 8% do salário", d.fgts13, fgts13Esperado);
+      const totalEsperado = Math.round((sal * 0.08 * 12 + fgts13Esperado) * 100) / 100;
+      assertNear("Total = mensal*12 + fgts13", d.subtotal, totalEsperado);
+    }
+
+    // =====================================================================
+    // Testes: salariosProporcionalPorAno
+    // =====================================================================
+    group("salariosProporcionalPorAno");
+    {
+      // 1× salário mínimo 2026 → deve retornar mínimo de cada ano
+      const r1 = salariosProporcionalPorAno(2023, 2026, 1621);
+      assertNear("2023 = mínimo 2023", r1[2023], 1320);
+      assertNear("2024 = mínimo 2024", r1[2024], 1412);
+      assertNear("2025 = mínimo 2025", r1[2025], 1518);
+      assertNear("2026 = mínimo 2026", r1[2026], 1621);
+
+      // 2× salário mínimo → dobro de cada ano
+      const r2 = salariosProporcionalPorAno(2024, 2026, 3242);
+      assertNear("2024 = 2× mínimo 2024", r2[2024], 2824);
+      assertNear("2025 = 2× mínimo 2025", r2[2025], 3036);
+      assertNear("2026 = 2× mínimo 2026", r2[2026], 3242);
+    }
+
+    // =====================================================================
+    // Testes: estimarFGTS — salários diferentes por ano
+    // =====================================================================
+    group("estimarFGTS: salários diferentes por ano");
+    {
+      const salarios = { 2023: 1302, 2024: 1412, 2025: 1518, 2026: 1621 };
+      const est = estimarFGTS("2023-03-01", "2026-02-28", salarios);
+      assert("4 anos (2023–2026)", est.detalhes.length === 4);
+      const d2023 = est.detalhes.find(d => d.ano === 2023);
+      const d2024 = est.detalhes.find(d => d.ano === 2024);
+      const d2025 = est.detalhes.find(d => d.ano === 2025);
+      const d2026 = est.detalhes.find(d => d.ano === 2026);
+      assertNear("2023: salário = 1302", d2023.salario, 1302);
+      assertNear("2024: salário = 1412", d2024.salario, 1412);
+      assertNear("2025: salário = 1518", d2025.salario, 1518);
+      assertNear("2026: salário = 1621", d2026.salario, 1621);
+      assertNear("2023: depósito mensal = 8% de 1302", d2023.depositoMensal, Math.round(1302 * 0.08 * 100) / 100);
+      assertNear("2024: depósito mensal = 8% de 1412", d2024.depositoMensal, Math.round(1412 * 0.08 * 100) / 100);
+      assert("Total > 0", est.total > 0);
+      // Resultado deve ser diferente de usar salário fixo
+      const estFixo = estimarFGTS("2023-03-01", "2026-02-28", 1621);
+      assert("Total com salários variados < total com salário fixo alto", est.total < estFixo.total);
+    }
+
+    // =====================================================================
+    // Testes: estimarFGTS — objeto com salário único equivale a número
+    // =====================================================================
+    group("estimarFGTS: objeto salário único ≡ número");
+    {
+      const sal = 3000;
+      const estNum = estimarFGTS("2025-01-01", "2025-12-31", sal);
+      const estObj = estimarFGTS("2025-01-01", "2025-12-31", { 2025: sal });
+      assertNear("Total idêntico (número vs objeto)", estNum.total, estObj.total);
+      assertNear("Subtotal idêntico", estNum.detalhes[0].subtotal, estObj.detalhes[0].subtotal);
+    }
+
+    // =====================================================================
+    // Testes: estimarFGTS — meses parciais (rateio proporcional)
+    // =====================================================================
+    group("estimarFGTS: meses parciais com rateio");
+    {
+      const sal = 2000;
+      const dep = sal * 0.08; // 160
+      // 5 dias: jan 28-31 (4d) + fev 1-2 (2d)
+      const est = estimarFGTS("2025-01-28", "2025-02-02", sal);
+      const d = est.detalhes[0];
+      const fracJan = 4 / 31;
+      const fracFev = 2 / 28;
+      const mesesEsperados = Math.round((fracJan + fracFev) * 100) / 100;
+      assertNear("Meses efetivos ≈ 0.2", d.meses, mesesEsperados, 0.01);
+      assert("Total < depósito de 1 mês cheio", est.total < dep);
+
+      // Contratado dia 15, demitido dia 10
+      const est2 = estimarFGTS("2025-03-15", "2025-06-10", sal);
+      const d2 = est2.detalhes[0];
+      const fracMar = 17 / 31;
+      const fracAbr = 1;
+      const fracMai = 1;
+      const fracJun = 10 / 30;
+      const mesesEsp2 = Math.round((fracMar + fracAbr + fracMai + fracJun) * 100) / 100;
+      assertNear("Meses efetivos ≈ 2.88", d2.meses, mesesEsp2, 0.01);
+      assert("Total menor que 4 meses cheios", est2.total < dep * 4);
+    }
+
+    // =====================================================================
     // Resumo
     // =====================================================================
     const summary = document.getElementById("summary");

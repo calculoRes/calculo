@@ -769,6 +769,71 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
+    /* ---------- Painel Estimativa FGTS ---------- */
+    .fgts-estimar-wrap {
+      display: flex; gap: 8px; align-items: flex-end;
+    }
+    .fgts-estimar-wrap input { flex: 1; }
+    .btn-estimar-fgts {
+      padding: 8px 14px;
+      background: var(--primary-light);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 0.82rem;
+      white-space: nowrap;
+      height: 40px;
+    }
+    .btn-estimar-fgts:hover { background: var(--primary); }
+    .fgts-painel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px;
+      margin-top: 8px;
+      animation: fadeSlideIn 0.3s ease-out;
+    }
+    .fgts-painel table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+    .fgts-painel th,
+    .fgts-painel td {
+      padding: 6px 8px;
+      text-align: right;
+      border-bottom: 1px solid var(--border);
+    }
+    .fgts-painel th { text-align: right; font-weight: 600; color: var(--primary); }
+    .fgts-painel th:first-child,
+    .fgts-painel td:first-child { text-align: left; }
+    .fgts-painel tfoot td { font-weight: 700; border-top: 2px solid var(--primary); }
+    .btn-usar-fgts {
+      margin-top: 8px;
+      padding: 6px 16px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 0.82rem;
+    }
+    .btn-usar-fgts:hover { opacity: 0.9; }
+    .fgts-salarios-ano {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;
+    }
+    .fgts-salarios-ano .sal-ano-item {
+      display: flex; flex-direction: column; gap: 2px; min-width: 130px; flex: 1;
+    }
+    .fgts-salarios-ano .sal-ano-item label {
+      font-size: 0.78rem; font-weight: 600; color: var(--primary);
+    }
+    .fgts-salarios-ano .sal-ano-item input {
+      padding: 5px 8px; font-size: 0.82rem; border: 1px solid var(--border);
+      border-radius: var(--radius); text-align: right; width: 100%;
+    }
+
     /* ---------- Validação inline ---------- */
     .form-group.has-error input,
     .form-group.has-error select {
@@ -1417,6 +1482,8 @@
       const [form, setForm] = useState(initialForm);
       const [errors, setErrors] = useState({});
       const [regimeKey, setRegimeKey] = useState(0);
+      const [fgtsEstimativa, setFgtsEstimativa] = useState(null);
+      const [salariosPorAno, setSalariosPorAno] = useState({});
       useEffect(() => {
         if (editando) {
           const d = editando.dados;
@@ -1663,16 +1730,110 @@
       }, React.createElement("label", null, "Saldo FGTS (R$) ", React.createElement("span", {
         className: "opt"
       }, "(opcional)"), React.createElement(Tip, {
-        text: "Valor total já depositado na conta do FGTS do funcionário. Usado para calcular a multa de 40% ou 20%."
-      })), React.createElement("input", {
-        type: "text",
-        inputMode: "decimal",
-        name: "saldoFGTS",
-        value: form.saldoFGTS,
-        onChange: handleMoneyChange,
-        onBlur: handleMoneyBlur,
-        placeholder: "R$ 0,00"
-      })), React.createElement("div", {
+        text: "Valor total já depositado na conta do FGTS do funcionário. Usado para calcular a multa de 40% ou 20%. Use \"Estimar\" para calcular automaticamente."
+      })), React.createElement("div", { className: "fgts-estimar-wrap" },
+        React.createElement("input", {
+          type: "text",
+          inputMode: "decimal",
+          name: "saldoFGTS",
+          value: form.saldoFGTS,
+          onChange: handleMoneyChange,
+          onBlur: handleMoneyBlur,
+          placeholder: "R$ 0,00"
+        }),
+        React.createElement("button", {
+          type: "button",
+          className: "btn-estimar-fgts",
+          onClick: () => {
+            if (!form.dataContratacao || !form.dataDemissao || !form.salario) {
+              setErrors(prev => ({ ...prev, saldoFGTS: "Preencha datas e salário primeiro" }));
+              return;
+            }
+            const sal = parseFloat(parseMoney(form.salario));
+            if (!sal || sal <= 0) {
+              setErrors(prev => ({ ...prev, saldoFGTS: "Salário inválido" }));
+              return;
+            }
+            setErrors(prev => { const { saldoFGTS: _, ...rest } = prev; return rest; });
+            const inicioAno = parseDate(form.dataContratacao).getFullYear();
+            const fimAno = parseDate(form.dataDemissao).getFullYear();
+            const salObj = salariosProporcionalPorAno(inicioAno, fimAno, sal);
+            const novoSalarios = {};
+            for (const [a, v] of Object.entries(salObj)) novoSalarios[a] = fmtMoney(v);
+            setSalariosPorAno(novoSalarios);
+            const est = estimarFGTS(form.dataContratacao, form.dataDemissao, salObj);
+            setFgtsEstimativa(est);
+          }
+        }, "Estimar")
+      ),
+      fgtsEstimativa && React.createElement("div", { className: "fgts-painel" },
+        React.createElement("div", { className: "fgts-salarios-ano" },
+          Object.keys(salariosPorAno).sort().map(ano =>
+            React.createElement("div", { key: ano, className: "sal-ano-item" },
+              React.createElement("label", null, ano),
+              React.createElement("input", {
+                type: "text",
+                inputMode: "decimal",
+                value: salariosPorAno[ano],
+                onChange: e => {
+                  const v = e.target.value.replace(/[^\d.,]/g, "");
+                  setSalariosPorAno(prev => ({ ...prev, [ano]: v }));
+                },
+                onBlur: e => {
+                  const raw = parseMoney(e.target.value);
+                  const val = raw !== "" ? parseFloat(raw) : 0;
+                  setSalariosPorAno(prev => ({ ...prev, [ano]: fmtMoney(val) }));
+                  const salObj = {};
+                  for (const [a, s] of Object.entries(salariosPorAno)) { const n = parseFloat(parseMoney(s)); salObj[a] = isNaN(n) ? 0 : n; }
+                  salObj[ano] = val;
+                  setFgtsEstimativa(estimarFGTS(form.dataContratacao, form.dataDemissao, salObj));
+                }
+              })
+            )
+          )
+        ),
+        React.createElement("table", null,
+          React.createElement("thead", null,
+            React.createElement("tr", null,
+              React.createElement("th", null, "Ano"),
+              React.createElement("th", null, "Salário"),
+              React.createElement("th", null, "Meses"),
+              React.createElement("th", null, "Dep. Mês Cheio (8%)"),
+              React.createElement("th", null, "FGTS 13º"),
+              React.createElement("th", null, "Total Ano")
+            )
+          ),
+          React.createElement("tbody", null,
+            fgtsEstimativa.detalhes.map(d => React.createElement("tr", { key: d.ano },
+              React.createElement("td", null, d.ano),
+              React.createElement("td", null, fmt(d.salario)),
+              React.createElement("td", null, d.meses === Math.floor(d.meses) ? d.meses : d.meses.toFixed(1)),
+              React.createElement("td", null, fmt(d.depositoMensal)),
+              React.createElement("td", null, fmt(d.fgts13)),
+              React.createElement("td", null, fmt(d.subtotal))
+            ))
+          ),
+          React.createElement("tfoot", null,
+            React.createElement("tr", null,
+              React.createElement("td", null, "Total"),
+              React.createElement("td", null),
+              React.createElement("td", null, (() => { const t = fgtsEstimativa.detalhes.reduce((s, d) => s + d.meses, 0); return t === Math.floor(t) ? t : t.toFixed(1); })()),
+              React.createElement("td", null),
+              React.createElement("td", null),
+              React.createElement("td", null, fmt(fgtsEstimativa.total))
+            )
+          )
+        ),
+        React.createElement("button", {
+          type: "button",
+          className: "btn-usar-fgts",
+          onClick: () => {
+            setForm(prev => ({ ...prev, saldoFGTS: fmtMoney(fgtsEstimativa.total) }));
+            setFgtsEstimativa(null);
+          }
+        }, "Usar este valor")
+      )
+    ), React.createElement("div", {
         className: "form-group form-group-full regime-fields"
       }, React.createElement("div", {
         className: "checkbox-group"
